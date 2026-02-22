@@ -1,16 +1,9 @@
-/**
- * Script para criar usuários de teste
- * Executa automaticamente quando o servidor inicia
- */
-
 const bcrypt = require('bcryptjs');
 
-// hashSync para popular usuários de forma síncrona ao carregar o módulo
 function hashSync(password, rounds = 10) {
   return bcrypt.hashSync(password, rounds);
 }
 
-// Usuários de teste pré-configurados
 const testUsers = [
   {
     id: 1,
@@ -70,17 +63,11 @@ const testUsers = [
   },
 ];
 
-/**
- * Criar usuários de teste (síncrono - evita race condition no primeiro login)
- * @param {Array} usersArray - Array de usuários em memória
- */
 function seedUsersSync(usersArray) {
   console.log('🌱 Verificando usuários de teste...');
-
   for (const userData of testUsers) {
     const exists = usersArray.some((u) => u.email === userData.email);
     if (exists) continue;
-
     const hashedPassword = hashSync(userData.password, 10);
     const user = {
       id: userData.id,
@@ -94,13 +81,9 @@ function seedUsersSync(usersArray) {
     usersArray.push(user);
     console.log(`✅ Usuário criado: ${userData.email} (${userData.role})`);
   }
-
   console.log('✅ Usuários de teste ok.');
 }
 
-/**
- * Versão assíncrona (mantida para compatibilidade)
- */
 async function seedUsers(usersArray) {
   seedUsersSync(usersArray);
 }

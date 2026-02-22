@@ -6,6 +6,9 @@ const dotenv = require('dotenv');
 // Carregar variáveis de ambiente
 dotenv.config();
 
+// Importar Firebase e App Check (com a nova lógica condicional)
+const { verifyAppCheck } = require('./services/firebase');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -30,10 +33,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir requisições sem origin (mobile apps, Postman, etc)
     if (!origin) return callback(null, true);
-    
-    // Permitir origens na lista ou em desenvolvimento
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
@@ -41,9 +41,9 @@ app.use(cors({
       callback(new Error('Não permitido pelo CORS'));
     }
   },
-  credentials: true, // Importante para cookies/sessions
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Firebase-AppCheck'],
   exposedHeaders: ['Authorization'],
 }));
 
@@ -53,8 +53,8 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ⚠️ APP CHECK TEMPORARIAMENTE DESATIVADO PARA TESTES ⚠️
-// As linhas abaixo foram removidas para permitir login sem token
+// 🔒 Middleware do App Check (AGORA CONTROLADO POR VARIÁVEL DE AMBIENTE)
+app.use('/api', verifyAppCheck);
 
 // Servir uploads estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -96,7 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Rota de teste
+// Rota de teste (pública, mas passa pelo App Check)
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
