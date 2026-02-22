@@ -6,23 +6,17 @@ const admin = require('firebase-admin');
 let serviceAccount;
 
 try {
-  // Tenta pegar o conteúdo da variável FIREBASE_SERVICE_ACCOUNT
   const envVar = process.env.FIREBASE_SERVICE_ACCOUNT;
   
   if (!envVar) {
     throw new Error('❌ Variável de ambiente FIREBASE_SERVICE_ACCOUNT não foi encontrada!');
   }
   
-  // Converte o texto (string) para um objeto JavaScript
   serviceAccount = JSON.parse(envVar);
-  
-  console.log('✅ Chave do Firebase carregada com sucesso da variável de ambiente!');
+  console.log('✅ Chave do Firebase carregada com sucesso!');
   
 } catch (error) {
-  console.error('❌ ERRO CRÍTICO: Não foi possível carregar a chave do Firebase');
-  console.error('Detalhes:', error.message);
-  
-  // Encerra o programa com erro (não adianta continuar sem Firebase)
+  console.error('❌ ERRO CRÍTICO:', error.message);
   process.exit(1);
 }
 
@@ -45,37 +39,8 @@ try {
 }
 
 // =====================================================
-// CONFIGURAR O APP CHECK
-// =====================================================
-const appCheck = admin.appCheck();
-
-// Middleware para verificar token do App Check
-const verifyAppCheck = async (req, res, next) => {
-  const appCheckToken = req.header('X-Firebase-AppCheck');
-  
-  if (!appCheckToken) {
-    return res.status(401).json({ 
-      error: 'Token do App Check não fornecido' 
-    });
-  }
-
-  try {
-    await appCheck.verifyToken(appCheckToken);
-    console.log('✅ Token do App Check válido');
-    next();
-  } catch (err) {
-    console.error('❌ Token do App Check inválido:', err.message);
-    res.status(401).json({ 
-      error: 'Token do App Check inválido' 
-    });
-  }
-};
-
-// =====================================================
-// EXPORTAR AS FUNÇÕES PARA OUTROS ARQUIVOS USAREM
+// EXPORTAR APENAS O ADMIN (SEM APP CHECK)
 // =====================================================
 module.exports = {
-  admin,
-  appCheck,
-  verifyAppCheck
+  admin
 };

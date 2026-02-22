@@ -1,293 +1,269 @@
-const bcrypt = require('bcryptjs');
+// seed-data.js - Script para popular banco de dados com dados iniciais
+const bcrypt = require('bcrypt');
+const { User, Professional, Customer, Pet, Appointment, Notification } = require('../models'); // Ajuste conforme seu modelo
 
-/**
- * Seed de profissionais, pets, clientes, empresas e agendamentos para desenvolvimento.
- * Usuários de auth (id 4, 5, 6) = clientes: cliente@teste.com, maria@teste.com, joao@teste.com
- * Empresa de teste: contato@patatinha.com / demo123
- */
-function runSeed() {
-  if (process.env.NODE_ENV === 'production') return;
+const SALT_ROUNDS = 10;
 
-  const companiesRouter = require('../routes/companies.routes');
-  const professionalsRouter = require('../routes/professionals.routes');
-  const petsRouter = require('../routes/pets.routes');
-  const appointmentsRouter = require('../routes/appointments.routes');
-  const customersRouter = require('../routes/customers.routes');
+async function hashPassword(password) {
+  return await bcrypt.hash(password, SALT_ROUNDS);
+}
 
-  const { companies, companySettings, companyEmployees, companiesState } = companiesRouter;
-  const { notifications, nextNotificationId } = require('../data/notifications.data');
-  const professionals = professionalsRouter.professionals;
-  const pets = petsRouter.pets;
-  const appointments = appointmentsRouter.appointments;
-  const customers = customersRouter.customers;
-  const customersState = customersRouter.customersState;
+async function runSeed() {
+  console.log('🌱 Iniciando seed de dados...');
 
-  // Empresa de teste para login: contato@patatinha.com / demo123
-  if (companies.length === 0) {
-    console.log('🌱 Seed: criando empresa de teste (Patatinha Recife)...');
-    const now = new Date();
-    const trialEnd = new Date(now);
-    trialEnd.setDate(trialEnd.getDate() + 15);
-    const passwordHash = bcrypt.hashSync('demo123', 10);
-    companies.push({
-      id: 'comp_1',
-      name: 'Patatinha Recife',
-      legal_name: 'Patatinha Pet Shop Ltda',
-      cnpj: '11.222.333/0001-81',
-      email: 'contato@patatinha.com',
-      password_hash: passwordHash,
-      phone: '(81) 3333-4444',
-      whatsapp: '(81) 99999-5555',
-      address: 'Rua do Pet, 100',
-      address_number: '100',
-      complement: 'Sala 1',
-      neighborhood: 'Boa Viagem',
-      city: 'Recife',
-      state: 'PE',
-      zip_code: '51020010',
-      logo_url: null,
-      website: 'https://patatinha.com.br',
-      instagram: '@patatinha.recife',
-      trial_start: now,
-      trial_end: trialEnd,
-      subscription_status: 'trial',
-      subscription_plan_id: null,
-      payment_customer_id: null,
-      payment_method: null,
-      created_at: now,
-      updated_at: now,
-    });
-    companySettings.push({
-      id: 'settings_comp_1',
-      company_id: 'comp_1',
-      opening_hours: {
-        monday: '08:00-18:00',
-        tuesday: '08:00-18:00',
-        wednesday: '08:00-18:00',
-        thursday: '08:00-18:00',
-        friday: '08:00-18:00',
-        saturday: '09:00-13:00',
-        sunday: 'Fechado',
+  try {
+    // =====================================================
+    // 1. LIMPAR DADOS EXISTENTES (OPCIONAL)
+    // =====================================================
+    console.log('🧹 Limpando dados existentes...');
+    
+    await Notification.destroy({ where: {}, force: true });
+    await Appointment.destroy({ where: {}, force: true });
+    await Pet.destroy({ where: {}, force: true });
+    await Customer.destroy({ where: {}, force: true });
+    await Professional.destroy({ where: {}, force: true });
+    await User.destroy({ where: {}, force: true });
+    
+    console.log('✅ Dados antigos removidos.');
+
+    // =====================================================
+    // 2. CRIAR USUÁRIOS COM DIFERENTES PAPÉIS
+    // =====================================================
+    console.log('👥 Criando usuários...');
+
+    const usuarios = [
+      {
+        email: 'super@patatinha.com',
+        password: await hashPassword('Super@2026'),
+        role: 'super_admin',
+        name: 'Super Admin',
+        companyId: null // Super admin não pertence a nenhuma empresa
       },
-      services_offered: ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
-      employees: [],
-      created_at: now,
-      updated_at: now,
-    });
-    if (companiesState) companiesState.companyIdCounter = 2;
-    console.log('✅ Empresa criada: contato@patatinha.com / demo123');
-  }
-
-  // Funcionários da empresa Patatinha Recife (comp_1)
-  if (companyEmployees.filter((e) => e.company_id === 'comp_1').length === 0) {
-    console.log('🌱 Seed: criando funcionários da empresa...');
-    const empRoles = [
-      { name: 'João Vendedor', cpf: '12345678901', email: 'vendedor@patatinha.com', password: 'vendedor123', role: 'vendedor' },
-      { name: 'Maria Atendente', cpf: '98765432109', email: 'atendente@patatinha.com', password: 'atendente123', role: 'atendente' },
+      {
+        email: 'admin@patatinha.com',
+        password: await hashPassword('Admin@2026'),
+        role: 'master',
+        name: 'Admin Principal',
+        companyId: 1
+      },
+      {
+        email: 'gerente@patatinha.com',
+        password: await hashPassword('Gerente@2026'),
+        role: 'manager',
+        name: 'Gerente Geral',
+        companyId: 1
+      },
+      {
+        email: 'funcionario@patatinha.com',
+        password: await hashPassword('Func@2026'),
+        role: 'employee',
+        name: 'Funcionário Padrão',
+        companyId: 1
+      },
+      {
+        email: 'cliente@teste.com',
+        password: await hashPassword('Cliente@2026'),
+        role: 'customer',
+        name: 'Cliente Teste',
+        companyId: 1
+      },
+      {
+        email: 'maria@teste.com',
+        password: await hashPassword('Maria@2026'),
+        role: 'customer',
+        name: 'Maria Silva',
+        companyId: 1
+      },
+      {
+        email: 'joao@teste.com',
+        password: await hashPassword('Joao@2026'),
+        role: 'customer',
+        name: 'João Santos',
+        companyId: 1
+      }
     ];
-    empRoles.forEach((r, i) => {
-      companyEmployees.push({
-        id: 'emp_' + (i + 1),
-        company_id: 'comp_1',
-        name: r.name,
-        cpf: r.cpf,
-        email: r.email,
-        password_hash: bcrypt.hashSync(r.password, 10),
-        role: r.role,
-        is_active: true,
-        created_at: new Date(),
-      });
-    });
-    if (companiesState) companiesState.employeeIdCounter = 3;
-    console.log('✅ Funcionários: vendedor@patatinha.com / atendente@patatinha.com');
-  }
 
-  if (professionals.length === 0) {
-    console.log('🌱 Seed: criando profissionais...');
-    professionals.push({
-      id: 1,
-      name: 'Ana Silva',
-      specialties: ['banho', 'tosa', 'caes_grandes'],
-      averageSpeed: 60,
-      workSchedule: { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
-      daysOff: [],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    professionals.push({
-      id: 2,
-      name: 'Carlos Lima',
-      specialties: ['banho', 'tosa', 'gatos', 'veterinario'],
-      averageSpeed: 60,
-      workSchedule: { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
-      daysOff: [],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    professionalsRouter.professionalsState.professionalIdCounter = 3;
-    console.log('✅ Profissionais criados:', professionals.length);
-  }
-
-  // Clientes que solicitam serviços: mesmos que têm login (auth id 4, 5, 6)
-  if (customers.length === 0) {
-    console.log('🌱 Seed: criando clientes (com login/senha para área do cliente)...');
-    customers.push(
-      { id: 1, name: 'Cliente Teste', email: 'cliente@teste.com', phone: '(11) 99999-0001', createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: 'Maria Silva', email: 'maria@teste.com', phone: '(11) 99999-0002', createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, name: 'João Experimental', email: 'joao@teste.com', phone: '(11) 99999-0003', createdAt: new Date(), updatedAt: new Date() }
-    );
-    customersState.customerIdCounter = 4;
-    console.log('✅ Clientes criados:', customers.length);
-  }
-
-  const hasPetsJoao = pets.some((p) => p.userId === 6);
-  if (pets.length === 0 || !hasPetsJoao) {
-    if (pets.length === 0) console.log('🌱 Seed: criando pets para clientes...');
-    else console.log('🌱 Seed: adicionando 3 pets experimentais (João)...');
-    const today = new Date().toISOString().split('T')[0];
-    let nextPetId = pets.length + 1;
-    const pushPet = (userId, name, breed, species, age) => {
-      pets.push({
-        id: nextPetId++,
-        userId,
-        customerId: null,
-        name,
-        breed,
-        species,
-        age,
-        birthDate: null,
-        color: null,
-        weight: null,
-        photo: null,
-        importantInfo: null,
-        behaviorAlerts: [],
-        groomingPreferences: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    };
-    // userId 4 = cliente@teste.com, 5 = maria@teste.com
-    if (pets.length === 0) {
-      pushPet(4, 'Rex', 'Labrador', 'dog', 3);
-      pushPet(4, 'Luna', 'SRD', 'cat', 2);
-      pushPet(5, 'Rex', 'Labrador', 'dog', 4);
-      pushPet(5, 'Luna', 'SRD', 'cat', 1);
+    const createdUsers = [];
+    for (const userData of usuarios) {
+      try {
+        const user = await User.create(userData);
+        createdUsers.push(user);
+        console.log(`✅ Usuário criado: ${userData.email} (${userData.role})`);
+      } catch (error) {
+        console.error(`❌ Erro ao criar ${userData.email}:`, error.message);
+      }
     }
-    // userId 6 = joao@teste.com – 3 pets experimentais
-    pushPet(6, 'Thor', 'Pastor Alemão', 'dog', 2);
-    pushPet(6, 'Mel', 'Golden Retriever', 'dog', 4);
-    pushPet(6, 'Bob', 'SRD', 'cat', 1);
-    const maxId = pets.length ? Math.max(...pets.map((p) => p.id)) : 0;
-    petsRouter.petsState.petIdCounter = maxId + 1;
-    console.log('✅ Pets criados:', pets.length);
-    // Se acabamos de adicionar os 3 pets do João, criar agendamentos para eles
-    if (!hasPetsJoao && professionals.length > 0) {
-      const joaoPets = pets.filter((p) => p.userId === 6);
-      const todayStr = today;
-      const appState = appointmentsRouter.appointmentsState;
-      const serviceDurations = { banho: 60, tosa: 90, banho_tosa: 120, veterinario: 30, hotel: 60, outros: 60 };
-      [
-        { service: 'banho_tosa', date: todayStr, time: '11:00', professionalId: 1 },
-        { service: 'veterinario', date: addDays(todayStr, 1), time: '10:00', professionalId: 2 },
-        { service: 'banho', date: addDays(todayStr, 2), time: '16:00', professionalId: 1 },
-      ].forEach((a, i) => {
-        const petId = joaoPets[i]?.id;
-        if (!petId) return;
-        const duration = serviceDurations[a.service] || 60;
-        appointments.push({
-          id: appState.appointmentIdCounter++,
-          userId: 6,
-          customerId: null,
-          petId,
-          professionalId: a.professionalId,
-          service: a.service,
-          date: a.date,
-          time: a.time,
-          duration,
-          notes: null,
-          status: 'confirmed',
-          checkInTime: null,
-          checkOutTime: null,
-          estimatedCompletionTime: null,
-          createdAt: new Date(),
+
+    // =====================================================
+    // 3. CRIAR PROFISSIONAIS
+    // =====================================================
+    console.log('💇 Criando profissionais...');
+
+    const profissionais = [
+      { name: 'Ana Souza', specialty: 'Banho e Tosa', companyId: 1 },
+      { name: 'Carlos Lima', specialty: 'Veterinário', companyId: 1 },
+      { name: 'Mariana Costa', specialty: 'Adestramento', companyId: 1 }
+    ];
+
+    for (const prof of profissionais) {
+      await Professional.create(prof);
+    }
+    console.log(`✅ ${profissionais.length} profissionais criados.`);
+
+    // =====================================================
+    // 4. CRIAR CLIENTES (associados aos usuários customer)
+    // =====================================================
+    console.log('🐕 Criando clientes...');
+
+    const customerUsers = createdUsers.filter(u => u.role === 'customer');
+    const clientes = [];
+
+    for (const user of customerUsers) {
+      const cliente = await Customer.create({
+        name: user.name,
+        email: user.email,
+        phone: '(81) 99999-9999',
+        address: 'Rua Exemplo, 123',
+        userId: user.id,
+        companyId: user.companyId
+      });
+      clientes.push(cliente);
+    }
+    console.log(`✅ ${clientes.length} clientes criados.`);
+
+    // =====================================================
+    // 5. CRIAR PETS PARA OS CLIENTES
+    // =====================================================
+    console.log('🐾 Criando pets...');
+
+    const racas = ['Vira-lata', 'Poodle', 'Labrador', 'Bulldog', 'Pastor Alemão'];
+    const nomes = ['Rex', 'Luna', 'Thor', 'Mel', 'Bob', 'Nina', 'Fred'];
+
+    let petCount = 0;
+    for (const cliente of clientes) {
+      // Cada cliente tem 1-3 pets
+      const numPets = Math.floor(Math.random() * 3) + 1;
+      
+      for (let i = 0; i < numPets; i++) {
+        await Pet.create({
+          name: nomes[Math.floor(Math.random() * nomes.length)] + (i+1),
+          species: 'dog',
+          breed: racas[Math.floor(Math.random() * racas.length)],
+          age: Math.floor(Math.random() * 10) + 1,
+          customerId: cliente.id,
+          companyId: cliente.companyId
         });
-      });
-      console.log('✅ Agendamentos do João (3 serviços) criados.');
+        petCount++;
+      }
     }
-  }
+    console.log(`✅ ${petCount} pets criados.`);
 
-  const todayStr = today();
-  if (appointments.length === 0 && professionals.length > 0 && pets.length > 0) {
-    console.log('🌱 Seed: criando agendamentos...');
-    const serviceDurations = { banho: 60, tosa: 90, banho_tosa: 120, veterinario: 30, hotel: 60, outros: 60 };
-    const base = [
-      { userId: 4, petId: 1, service: 'banho_tosa', date: todayStr, time: '14:00', professionalId: 1 },
-      { userId: 4, petId: 2, service: 'veterinario', date: todayStr, time: '10:30', professionalId: 2 },
-      { userId: 5, petId: 3, service: 'banho', date: todayStr, time: '09:00', professionalId: 1 },
-      { userId: 5, petId: 4, service: 'banho_tosa', date: addDays(todayStr, 1), time: '15:00', professionalId: 2 },
-      { userId: 6, petId: 5, service: 'banho_tosa', date: todayStr, time: '11:00', professionalId: 1 },
-      { userId: 6, petId: 6, service: 'veterinario', date: addDays(todayStr, 1), time: '10:00', professionalId: 2 },
-      { userId: 6, petId: 7, service: 'banho', date: addDays(todayStr, 2), time: '16:00', professionalId: 1 },
+    // =====================================================
+    // 6. CRIAR AGENDAMENTOS DE EXEMPLO
+    // =====================================================
+    console.log('📅 Criando agendamentos de exemplo...');
+
+    const hoje = new Date();
+    const amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+    const depoisAmanha = new Date(hoje);
+    depoisAmanha.setDate(depoisAmanha.getDate() + 2);
+
+    const profissionaisCriados = await Professional.findAll();
+    const clientesComPets = await Customer.findAll({ include: ['pets'] });
+
+    let appointmentCount = 0;
+    for (const cliente of clientesComPets.slice(0, 3)) { // só alguns clientes
+      if (cliente.pets && cliente.pets.length > 0) {
+        const pet = cliente.pets[0];
+        const profissional = profissionaisCriados[Math.floor(Math.random() * profissionaisCriados.length)];
+        
+        // Agendamento para hoje
+        await Appointment.create({
+          date: hoje.toISOString().split('T')[0],
+          time: '14:00',
+          service: 'Banho',
+          status: 'confirmed',
+          petId: pet.id,
+          customerId: cliente.id,
+          professionalId: profissional.id,
+          companyId: cliente.companyId
+        });
+        appointmentCount++;
+
+        // Agendamento para amanhã
+        await Appointment.create({
+          date: amanha.toISOString().split('T')[0],
+          time: '10:30',
+          service: 'Tosa',
+          status: 'confirmed',
+          petId: pet.id,
+          customerId: cliente.id,
+          professionalId: profissional.id,
+          companyId: cliente.companyId
+        });
+        appointmentCount++;
+      }
+    }
+    console.log(`✅ ${appointmentCount} agendamentos criados.`);
+
+    // =====================================================
+    // 7. CRIAR NOTIFICAÇÕES DE EXEMPLO
+    // =====================================================
+    console.log('🔔 Criando notificações de exemplo...');
+
+    const tiposNotificacao = ['lembrete', 'promoção', 'alerta'];
+    const mensagens = [
+      'Seu banho está agendado para amanhã!',
+      'Promoção especial de tosa essa semana!',
+      'Não esqueça da vacina do seu pet.',
+      'Seu pet está pronto para retirada!'
     ];
-    base.forEach((a, i) => {
-      const duration = serviceDurations[a.service] || 60;
-      appointments.push({
-        id: i + 1,
-        userId: a.userId,
-        customerId: null,
-        petId: a.petId,
-        professionalId: a.professionalId,
-        service: a.service,
-        date: a.date,
-        time: a.time,
-        duration,
-        notes: null,
-        status: i === 0 ? 'confirmed' : i === 1 ? 'checked_in' : 'confirmed',
-        checkInTime: null,
-        checkOutTime: null,
-        estimatedCompletionTime: null,
-        createdAt: new Date(),
-      });
-    });
-    appointmentsRouter.appointmentsState.appointmentIdCounter = 8;
-    console.log('✅ Agendamentos criados:', appointments.length);
+
+    let notificacaoCount = 0;
+    for (const user of createdUsers.slice(0, 5)) {
+      const numNotif = Math.floor(Math.random() * 3) + 1;
+      
+      for (let i = 0; i < numNotif; i++) {
+        await Notification.create({
+          userId: user.id,
+          type: tiposNotificacao[Math.floor(Math.random() * tiposNotificacao.length)],
+          message: mensagens[Math.floor(Math.random() * mensagens.length)],
+          read: Math.random() > 0.5,
+          companyId: user.companyId
+        });
+        notificacaoCount++;
+      }
+    }
+    console.log(`✅ ${notificacaoCount} notificações criadas.`);
+
+    // =====================================================
+    // 8. RESUMO FINAL
+    // =====================================================
+    console.log('\n📊 RESUMO DO SEED:');
+    console.log(`👥 Usuários: ${createdUsers.length}`);
+    console.log(`💇 Profissionais: ${profissionais.length}`);
+    console.log(`🐕 Clientes: ${clientes.length}`);
+    console.log(`🐾 Pets: ${petCount}`);
+    console.log(`📅 Agendamentos: ${appointmentCount}`);
+    console.log(`🔔 Notificações: ${notificacaoCount}`);
+    console.log('\n✅ Seed concluído com sucesso!');
+
+  } catch (error) {
+    console.error('❌ Erro durante o seed:', error);
+    throw error;
   }
-
-  // Notificações de teste (apenas se estiver vazio)
-  if (notifications && notifications.length === 0) {
-    const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 3600000);
-    const sample = [
-      { user_id: 1, type: 'new_appointment', title: 'Novo agendamento! 📅', body: 'Cliente Teste agendou banho_tosa para Rex às 14:00.', status: 'pending', company_id: 'comp_1' },
-      { user_id: 1, type: 'payment_received', title: '💰 Pagamento recebido', body: 'Pagamento de R$ 120,00 confirmado. Obrigado!', status: 'read', company_id: 'comp_1' },
-      { user_id: 4, type: 'appointment_reminder', title: 'Lembrete de agendamento 🐾', body: 'Olá! Rex tem agendamento amanhã às 14:00. Confirme sua presença!', status: 'pending', company_id: 'comp_1' },
-      { user_id: 4, type: 'pet_ready', title: 'Rex está pronto! 🐶', body: 'Seu pet está lindo e esperando por você! Passe aqui para buscá-lo.', status: 'read', company_id: 'comp_1' },
-      { user_id: 6, type: 'vaccine_alert', title: 'Vacina próxima do vencimento 💉', body: 'A vacina V10 do Totó vence em 15 dias. Agende já!', status: 'pending', company_id: 'comp_1' },
-      { user_id: 'comp_1', type: 'low_stock_alert', title: '⚠️ Estoque baixo', body: 'Shampoo Pet está com apenas 3 unidades. Mínimo recomendado: 10.', status: 'pending', company_id: 'comp_1' },
-    ];
-    sample.forEach((s) => {
-      notifications.push({
-        id: nextNotificationId(),
-        ...s,
-        data: {},
-        created_at: s.status === 'read' ? oneHourAgo : now,
-        delivered_via: ['push'],
-      });
-    });
-    console.log('✅ Notificações de teste criadas:', notifications.length);
-  }
-}
-
-function today() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function addDays(isoDate, days) {
-  const d = new Date(isoDate + 'T12:00:00');
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split('T')[0];
 }
 
 module.exports = { runSeed };
+
+// Se executado diretamente
+if (require.main === module) {
+  runSeed().then(() => {
+    console.log('🎉 Seed finalizado!');
+    process.exit(0);
+  }).catch(err => {
+    console.error('💥 Erro fatal:', err);
+    process.exit(1);
+  });
+}

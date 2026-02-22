@@ -3,9 +3,6 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Importar Firebase e App Check
-const { verifyAppCheck } = require('./services/firebase');
-
 // Carregar variáveis de ambiente
 dotenv.config();
 
@@ -28,7 +25,6 @@ const allowedOrigins = [
   'http://127.0.0.1:3008',
   'http://127.0.0.1:3009',
   'http://127.0.0.1:3000',
-  // Adicionar domínio do Firebase Hosting
   'https://patatinha-petshop.web.app',
 ];
 
@@ -47,7 +43,7 @@ app.use(cors({
   },
   credentials: true, // Importante para cookies/sessions
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Firebase-AppCheck'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Authorization'],
 }));
 
@@ -57,14 +53,13 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔒 Middleware do App Check - PROTEGE TODAS AS ROTAS /api
-// Colocado ANTES das rotas para garantir que todas sejam verificadas
-app.use('/api', verifyAppCheck);
+// ⚠️ APP CHECK TEMPORARIAMENTE DESATIVADO PARA TESTES ⚠️
+// As linhas abaixo foram removidas para permitir login sem token
 
 // Servir uploads estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Rotas públicas (antes de auth) - AGORA ESTÃO PROTEGIDAS PELO APP CHECK
+// Rotas públicas (antes de auth)
 app.use('/api/companies', require('./routes/companies.routes'));
 app.use('/api/subscription-plans', require('./routes/subscription-plans.routes'));
 app.use('/api/payments', require('./routes/payments.routes'));
@@ -101,7 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-// Rota de teste (NÃO PROTEGIDA pelo App Check - útil para verificar se API está no ar)
+// Rota de teste
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
