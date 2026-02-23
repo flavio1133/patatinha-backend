@@ -8,6 +8,21 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 const customers = [];
 const customersState = { customerIdCounter: 1 };
 
+// Cliente fictício ligado ao login cliente@teste.com
+// Útil para cenários de demonstração (empresa + cliente real)
+const demoCustomer = {
+  id: customersState.customerIdCounter++,
+  name: 'Cliente Teste Patatinha',
+  phone: '(81) 98888-0000',
+  email: 'cliente@teste.com',
+  address: 'Av. Boa Viagem, 123 - Boa Viagem, Recife - PE',
+  notes: 'Cliente de demonstração para testes da plataforma.',
+  photo: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+customers.push(demoCustomer);
+
 // Middleware de validação
 const validate = (req, res, next) => {
   const errors = validationResult(req);

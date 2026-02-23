@@ -9,6 +9,36 @@ const { canAddPet, validatePetRequiredFields } = require('../services/business-r
 const pets = [];
 const petsState = { petIdCounter: 1 };
 
+// Pet fictício para o cliente cliente@teste.com (userId 5 em seed-users)
+// e também vinculado ao customer id 1 criado em customers.routes.js
+const demoPetKiara = {
+  id: petsState.petIdCounter++,
+  userId: 5, // userId do cliente@teste.com nos seeds de auth
+  customerId: 1,
+  name: 'Kiara',
+  breed: 'Golden Retriever',
+  age: 3,
+  birthDate: '2021-04-15',
+  species: 'dog',
+  color: 'Dourado',
+  weight: 24,
+  photo: null,
+  importantInfo: 'Alergia a alguns tipos de shampoo perfumado.',
+  behaviorAlerts: [
+    'Assusta com barulho alto de secador.',
+    'Precisa de aproximação calma na primeira interação.',
+  ],
+  groomingPreferences: {
+    hairLength: 'Médio',
+    shampooType: 'Hipoalergênico',
+    finishing: ['Laço rosa', 'Perfume suave'],
+    notes: 'Gosta de água morna e carinho na cabeça.',
+  },
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+pets.push(demoPetKiara);
+
 // Middleware de validação
 const validate = (req, res, next) => {
   const errors = validationResult(req);
