@@ -19,14 +19,29 @@ const api = axios.create({
 // Interceptor para adicionar token em todas as requisições
 api.interceptors.request.use(
   (config) => {
-    let token = localStorage.getItem('auth_token');
     const url = (config.url || '').toString();
-    if ((url.startsWith('/companies/') || url.startsWith('/company-subscription/')) && !url.includes('register') && !url.includes('validate-cnpj') && !url.includes('login')) {
-      token = localStorage.getItem('company_token') || token;
+    const isPublic =
+      url.includes('/login') ||
+      url.includes('/register') ||
+      url.includes('/validate-cnpj') ||
+      url.includes('/validate-invitation-code') ||
+      url.includes('/link-client-to-company') ||
+      (url.includes('/companies/') && (url.includes('/availability') || url.endsWith('/public')));
+
+    if (isPublic) {
+      return config;
     }
-    if (!token) token = localStorage.getItem('company_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+
+    const companyToken = localStorage.getItem('company_token');
+    const authToken = localStorage.getItem('auth_token');
+
+    // Na gestão com login da empresa: priorizar company_token para todas as rotas da API
+    if (companyToken) {
+      config.headers.Authorization = `Bearer ${companyToken}`;
+      return config;
+    }
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
     }
     return config;
   },

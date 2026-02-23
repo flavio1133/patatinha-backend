@@ -1,0 +1,42 @@
+---
+description: Fluxo padrão para alterações no Patatinha (build, deploy, git)
+alwaysApply: true
+---
+
+# Fluxo Patatinha – alterações no código
+
+Ao pedir alteração no código do Patatinha:
+
+1. **Fazer** a alteração solicitada.
+2. **Mostrar** apenas as partes do código que mudaram (diffs/trechos).
+3. **Perguntar:** "Pronto para build e deploy?"
+
+## Quando o usuário responder "SIM" ou "PODE FAZER"
+
+Executar automaticamente, nesta ordem:
+
+**a) Frontend**
+```bash
+cd web && npm run build && firebase deploy
+```
+(No PowerShell: `Set-Location web; npm run build; Set-Location ..; firebase deploy`)
+
+**b) Git**
+```bash
+git add . && git commit -m "[IA] Alteração automática" && git push
+```
+(Só se existir remote configurado; se não existir, informar que falta configurar o remote.)
+
+**c) Resposta**
+"Deploy concluído! Site atualizado em: https://patatinha-petshop.web.app"
+
+## Se houver erro
+
+- Mostrar o erro.
+- Sugerir a correção.
+- Após corrigir, executar o fluxo novamente.
+
+## Estilo de resposta
+
+- **Não:** explicações longas sobre comandos básicos, repetir o que o usuário já sabe, detalhes desnecessários.
+- **Sim:** objetividade, apenas código alterado, sequência exata de comandos, confirmação de que funcionou.

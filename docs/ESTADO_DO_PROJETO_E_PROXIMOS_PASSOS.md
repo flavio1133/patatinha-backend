@@ -1,6 +1,6 @@
 # Estado do projeto e próximos passos – Patatinha
 
-**Atualizado para refletir:** deploy online (sem nada offline), conta contato@patatinha.com, agenda da empresa e integração com a área do cliente.
+**Atualizado para refletir:** deploy online, conta contato@patatinha.com, agenda e integração com a área do cliente. **Última atualização:** frontend com correção do token da empresa (menus e funções usam `company_token` em todas as chamadas), mensagens de erro claras na Agenda e no modal de novo agendamento, e deploy no Firebase concluído.
 
 ---
 

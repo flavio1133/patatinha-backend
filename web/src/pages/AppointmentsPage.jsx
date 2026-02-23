@@ -42,10 +42,10 @@ function NewAppointmentModal({ onClose, onSuccess }) {
   const [time, setTime] = useState('09:00');
   const [notes, setNotes] = useState('');
 
-  const { data: customersData } = useQuery({
+  const { data: customersData, isError: customersError, refetch: refetchCustomers } = useQuery({
     queryKey: ['customers'],
     queryFn: () => customersAPI.getAll().then((res) => res.data),
-    retry: false,
+    retry: 1,
   });
   const customers = customersData?.customers || [];
 
@@ -53,14 +53,14 @@ function NewAppointmentModal({ onClose, onSuccess }) {
     queryKey: ['pets', customerId],
     queryFn: () => petsAPI.getAll(customerId).then((res) => res.data),
     enabled: !!customerId,
-    retry: false,
+    retry: 1,
   });
   const pets = petsData?.pets || [];
 
-  const { data: professionalsData } = useQuery({
+  const { data: professionalsData, isError: professionalsError } = useQuery({
     queryKey: ['professionals'],
     queryFn: () => professionalsAPI.getAll().then((res) => res.data),
-    retry: false,
+    retry: 1,
   });
   const professionals = professionalsData?.professionals || [];
 
@@ -106,6 +106,12 @@ function NewAppointmentModal({ onClose, onSuccess }) {
       <div className="modal-content modal-new-appointment" onClick={(e) => e.stopPropagation()}>
         <h3>Novo agendamento</h3>
         <form onSubmit={handleSubmit}>
+          {customersError && (
+            <div className="form-error-inline">
+              <p>Não foi possível carregar os clientes. Verifique a conexão com o servidor (API no Render).</p>
+              <button type="button" className="btn-secondary btn-sm" onClick={() => refetchCustomers()}>Tentar novamente</button>
+            </div>
+          )}
           <div className="form-group">
             <label>Cliente *</label>
             <select value={customerId} onChange={handleCustomerChange} required>
@@ -272,7 +278,8 @@ export default function AppointmentsPage() {
         <div className="loading">Carregando...</div>
       ) : isError ? (
         <div className="agenda-error">
-          <p>Não foi possível carregar a agenda. Verifique sua conexão e o login.</p>
+          <p><strong>Não foi possível carregar a agenda.</strong></p>
+          <p>Verifique: (1) você está logado como empresa; (2) a conexão com a internet; (3) se o servidor da API está online (Render).</p>
           <button type="button" className="btn-primary" onClick={() => refetch()}>Tentar novamente</button>
         </div>
       ) : view === 'dia' ? (
