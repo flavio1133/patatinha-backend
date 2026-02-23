@@ -38,6 +38,14 @@ const testUsers = [
     role: 'employee',
   },
   {
+    id: 8,
+    name: 'Financeiro',
+    email: 'financeiro@patatinha.com',
+    password: 'Financeiro@2026',
+    phone: '(11) 93333-3333',
+    role: 'financial',
+  },
+  {
     id: 5,
     name: 'Cliente Teste',
     email: 'cliente@teste.com',

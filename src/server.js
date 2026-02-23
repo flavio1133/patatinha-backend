@@ -53,8 +53,24 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🔒 Middleware do App Check (AGORA CONTROLADO POR VARIÁVEL DE AMBIENTE)
-app.use('/api', verifyAppCheck);
+// 🔒 App Check: isenta rotas de login, saúde e cadastro público
+const skipAppCheckPaths = [
+  'health',
+  'auth/login',
+  'auth/register',
+  'companies/login',
+  'companies/register',
+  'companies/validate-cnpj',
+  'subscription-plans',
+  'validate-invitation-code',
+  'link-client-to-company',
+];
+app.use('/api', (req, res, next) => {
+  const path = (req.path || '').replace(/^\//, '');
+  const skip = skipAppCheckPaths.some((p) => path === p || path.startsWith(p + '/'));
+  if (skip) return next();
+  return verifyAppCheck(req, res, next);
+});
 
 // Servir uploads estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

@@ -49,9 +49,8 @@ const companySettings = [];
 const companyEmployees = [];
 const companiesState = { companyIdCounter: 1, employeeIdCounter: 1 };
 
-// Empresa de teste para desenvolvimento (sempre disponível)
+// Empresa de teste (disponível em dev e produção para demonstração)
 function initTestCompany() {
-  if (process.env.NODE_ENV === 'production') return;
   if (companies.some((c) => c.email === 'contato@patatinha.com')) return;
   const now = new Date();
   const trialEnd = new Date(now);

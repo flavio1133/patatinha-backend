@@ -10,13 +10,11 @@ const { seedUsersSync } = require('../scripts/seed-users');
 // Por enquanto, usando dados em memória para desenvolvimento
 const users = [];
 
-// Criar usuários de teste de forma SÍNCRONA ao carregar (evita 500 no primeiro login)
-if (process.env.NODE_ENV !== 'production') {
-  try {
-    seedUsersSync(users);
-  } catch (err) {
-    console.error('Erro ao criar usuários de teste:', err);
-  }
+// Criar usuários de teste ao carregar (em dev e produção para demonstração)
+try {
+  seedUsersSync(users);
+} catch (err) {
+  console.error('Erro ao criar usuários de teste:', err);
 }
 
 // Middleware de validação
