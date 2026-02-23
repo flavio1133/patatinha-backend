@@ -1,53 +1,35 @@
-# 🌐 Patatinha Web - Interface Web para Gestores
+# Patatinha Petshop 🐾
 
-Interface web moderna e responsiva para gestores do sistema Patatinha, desenvolvida em React.
+Sistema completo de gestão para petshops, desenvolvido com React no frontend e Node.js no backend.
 
-## 🚀 Como Executar
+## 📋 Sobre o Projeto
+
+O Patatinha é uma plataforma que permite:
+- 👥 Gerenciamento de clientes e seus pets
+- 📅 Agendamento de serviços (banho, tosa, consultas)
+- 💰 Controle financeiro e fluxo de caixa
+- 📦 Gestão de estoque de produtos
+- 🔐 Autenticação com diferentes níveis de acesso (super_admin, master, manager, employee, customer)
+
+## 🏗️ Arquitetura
+
+- **Frontend (Web):** React + Vite (hospedado no Firebase Hosting)
+- **Frontend (Mobile):** React Native (em desenvolvimento)
+- **Backend:** Node.js + Express (hospedado no Render)
+- **Banco de dados:** PostgreSQL (gerenciado pelo Render)
+- **Autenticação:** JWT + bcrypt
+
+## 🚀 Como executar
 
 ### Pré-requisitos
 - Node.js 18+ instalado
-- Backend rodando em `http://localhost:3000`
+- npm ou yarn
+- PostgreSQL (para desenvolvimento local)
 
-### Instalação
+### Backend
 
 ```bash
-cd web
+cd backend
 npm install
+cp .env.example .env  # Configure suas variáveis
 npm run dev
-```
-
-A aplicação estará disponível em `http://localhost:3005`
-
-## 📁 Estrutura
-
-```
-web/
-├── src/
-│   ├── components/     # Componentes reutilizáveis
-│   ├── pages/          # Páginas da aplicação
-│   ├── hooks/          # Custom hooks
-│   ├── services/      # Serviços de API
-│   └── App.jsx         # Componente principal
-├── index.html
-└── vite.config.js
-```
-
-## 🎨 Funcionalidades
-
-- ✅ Dashboard administrativo
-- ✅ Gestão de clientes
-- ✅ Agenda completa
-- ✅ Controle de estoque
-- ✅ Gestão financeira
-- ✅ Autenticação e autorização
-
-## 🔗 Integração com Backend
-
-A interface web usa a mesma API do app mobile, garantindo consistência total entre as plataformas.
-
-## 📱 Responsivo
-
-A interface é totalmente responsiva e funciona bem em:
-- 💻 Desktop
-- 📱 Tablet
-- 📱 Mobile (modo responsivo)

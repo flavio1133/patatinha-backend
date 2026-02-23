@@ -1,5 +1,6 @@
 # Dependências
 node_modules/
+<<<<<<< HEAD
 **/node_modules/
 
 # Flutter
@@ -9,16 +10,31 @@ node_modules/
 **/.flutter-plugins-dependencies
 **/.packages
 **/pubspec.lock
+=======
+package-lock.json
+>>>>>>> afd4a514368162a8167ea77f7f1bc6bd8d15d5c4
 
 # Variáveis de ambiente
 .env
 .env.local
+<<<<<<< HEAD
 .env.local.backup
 **/.env
+=======
+>>>>>>> afd4a514368162a8167ea77f7f1bc6bd8d15d5c4
 
 # Logs
 logs/
 *.log
+<<<<<<< HEAD
+=======
+npm-debug.log*
+
+# Arquivos temporários
+tmp/
+temp/
+uploads/
+>>>>>>> afd4a514368162a8167ea77f7f1bc6bd8d15d5c4
 
 # IDE
 .vscode/
@@ -29,6 +45,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+<<<<<<< HEAD
 
 # Uploads
 uploads/
@@ -38,3 +55,5 @@ uploads/
 **/firebase-key.json
 **/*-key.json
 **/*-keys.json
+=======
+>>>>>>> afd4a514368162a8167ea77f7f1bc6bd8d15d5c4
