@@ -33,3 +33,8 @@ Thumbs.db
 # Uploads
 uploads/
 **/uploads/
+
+# Chaves / credenciais
+**/firebase-key.json
+**/*-key.json
+**/*-keys.json
