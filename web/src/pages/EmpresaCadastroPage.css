@@ -1,0 +1,239 @@
+.empresa-cadastro-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.empresa-cadastro-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: 32px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.empresa-cadastro-header {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.empresa-cadastro-header .back-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #667eea;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.empresa-cadastro-header .back-link:hover {
+  text-decoration: underline;
+}
+
+.empresa-cadastro-login-hint {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.empresa-cadastro-login-hint a {
+  color: #667eea;
+  font-weight: 500;
+}
+
+.empresa-cadastro-header h1 {
+  font-size: 1.5rem;
+  color: #212121;
+  margin: 28px 0 16px;
+  text-align: center;
+}
+
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eee;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.step-dot.active {
+  background: #667eea;
+  color: white;
+}
+
+.empresa-form .form-step h2 {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.empresa-form .form-group {
+  margin-bottom: 16px;
+}
+
+.empresa-form .form-group label {
+  display: block;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.empresa-form .form-group input[type="text"],
+.empresa-form .form-group input[type="email"],
+.empresa-form .form-group input[type="url"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.empresa-form .form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group-small {
+  max-width: 80px;
+}
+
+.cnpj-feedback {
+  display: block;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.cnpj-feedback.valid {
+  color: #2e7d32;
+}
+
+.cnpj-feedback.invalid {
+  color: #c62828;
+}
+
+.horario-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.horario-row .check-label {
+  flex: 0 0 80px;
+  margin: 0;
+  font-weight: normal;
+}
+
+.horario-row .dia-label {
+  flex: 0 0 80px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.horario-row input[type="text"] {
+  flex: 1;
+  max-width: 140px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.services-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.resumo {
+  background: #f5f5f5;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.resumo p {
+  margin: 4px 0;
+}
+
+.form-error {
+  color: #c62828;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-prev, .btn-next, .btn-submit {
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-prev {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.btn-prev:hover {
+  background: #e0e0e0;
+}
+
+.btn-next, .btn-submit {
+  background: #667eea;
+  color: white;
+}
+
+.btn-next:hover:not(:disabled),
+.btn-submit:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.btn-next:disabled,
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

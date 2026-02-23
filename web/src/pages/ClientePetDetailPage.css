@@ -1,0 +1,112 @@
+.cliente-pet-detail-page .back-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.cliente-pet-detail-page .back-link:hover {
+  color: #FF6B4A;
+}
+
+.pet-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pet-detail-avatar {
+  font-size: 3rem;
+}
+
+.pet-detail-title h1 {
+  font-size: 1.75rem;
+  color: #212121;
+  margin: 0 0 4px 0;
+}
+
+.link-edit-pet {
+  font-size: 0.9rem;
+  color: #FF6B4A;
+  text-decoration: none;
+}
+
+.link-edit-pet:hover {
+  text-decoration: underline;
+}
+
+.section-history h2,
+.section-gallery h2 {
+  font-size: 1.1rem;
+  color: #212121;
+  margin-bottom: 16px;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+}
+
+.history-item.cancelled {
+  opacity: 0.6;
+}
+
+.history-date { color: #333; }
+.history-time { color: #666; }
+.history-service { font-weight: 500; color: #FF6B4A; }
+.history-status {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  background: #f0f0f0;
+  color: #333;
+}
+
+.empty-text {
+  color: #666;
+  margin: 0;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.gallery-item {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #f5f5f5;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-caption,
+.gallery-date {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.gallery-date {
+  display: block;
+  font-size: 0.8rem;
+}

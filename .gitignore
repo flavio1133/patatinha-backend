@@ -1,0 +1,35 @@
+# Dependências
+node_modules/
+**/node_modules/
+
+# Flutter
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.local.backup
+**/.env
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads
+uploads/
+**/uploads/

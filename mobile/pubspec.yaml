@@ -1,0 +1,64 @@
+name: patatinha_mobile
+description: App mobile Patatinha - Pet Shop Cross-Platform
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Gerenciamento de estado
+  provider: ^6.1.1
+  
+  # Navegação
+  go_router: ^13.0.0
+  
+  # Requisições HTTP
+  http: ^1.1.0
+  dio: ^5.4.0
+  
+  # Armazenamento local
+  shared_preferences: ^2.2.2
+  
+  # Autenticação
+  flutter_secure_storage: ^9.0.0
+  
+  # Notificações
+  flutter_local_notifications: ^16.3.0
+  
+  # Imagens e cache
+  cached_network_image: ^3.3.1
+  image_picker: ^1.0.7
+  
+  # Maps
+  google_maps_flutter: ^2.5.0
+  geolocator: ^10.1.0
+  
+  # Formatação e validação
+  intl: ^0.19.0
+  mask_text_input_formatter: ^2.9.0
+  
+  # UI
+  flutter_svg: ^2.0.9
+  lottie: ^2.7.0
+  
+  # Utilitários
+  uuid: ^4.2.1
+  path_provider: ^2.1.1
+  url_launcher: ^6.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/

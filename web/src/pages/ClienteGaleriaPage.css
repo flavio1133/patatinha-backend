@@ -1,0 +1,87 @@
+.cliente-galeria-page .form-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 8px 0 0;
+}
+
+.cliente-galeria-page .galeria-select-card label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.cliente-galeria-page .galeria-select-card select {
+  width: 100%;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.add-photo-card h2,
+.gallery-card h2 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: #212121;
+}
+
+.form-add-photo {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-add-photo input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.btn-add-photo {
+  background: #FF6B4A;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-add-photo:hover:not(:disabled) {
+  background: #e55a3a;
+}
+
+.galeria-grid-page {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.galeria-item-page {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.galeria-item-page img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.galeria-item-page p {
+  padding: 8px 10px;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.add-photo-card, .gallery-card {
+  margin-bottom: 20px;
+}

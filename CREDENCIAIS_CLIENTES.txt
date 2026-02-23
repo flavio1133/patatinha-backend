@@ -1,0 +1,46 @@
+========================================
+  CLIENTES COM LOGIN E SENHA
+========================================
+
+Os clientes que solicitam serviços estão cadastrados no sistema e podem
+entrar na Área do Cliente com login e senha para ver e MODIFICAR seus
+pedidos e serviços (cancelar agendamentos, ver pets e histórico).
+
+----------------------------------------
+  CLIENTE 1
+----------------------------------------
+  Nome:  Cliente Teste
+  E-mail: cliente@teste.com
+  Senha:  cliente123
+
+----------------------------------------
+  CLIENTE 2
+----------------------------------------
+  Nome:  Maria Silva
+  E-mail: maria@teste.com
+  Senha:  maria123
+
+----------------------------------------
+  CLIENTE 3 (3 pets: Thor, Mel, Bob)
+----------------------------------------
+  Nome:  João Experimental
+  E-mail: joao@teste.com
+  Senha:  joao123
+
+========================================
+  O QUE O CLIENTE PODE FAZER
+========================================
+• Acessar a Área do Cliente (link "Quero cuidar do meu pet!")
+• Ver próximo agendamento e lista de agendamentos futuros
+• CANCELAR agendamentos (botão "Cancelar" em cada agendamento)
+• Ver meus pets e histórico de serviços
+• Agendar novo serviço
+
+========================================
+  ONDE APARECEM NA GESTÃO
+========================================
+Os mesmos três clientes aparecem na tela "Clientes" do painel de gestão
+(Cliente Teste, Maria Silva, João Experimental), para que a equipe
+possa ver quem solicitou os serviços.
+
+========================================

@@ -1,0 +1,121 @@
+.notifications-center {
+  position: relative;
+}
+
+.notifications-center-btn {
+  position: relative;
+}
+
+.notifications-center-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+.notifications-center-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 350px;
+  max-height: 450px;
+  overflow: hidden;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notifications-center-header {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notifications-center-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.notifications-center-mark-all {
+  background: none;
+  border: none;
+  color: #FF6B4A;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.notifications-center-mark-all:hover {
+  text-decoration: underline;
+}
+
+.notifications-center-list {
+  overflow-y: auto;
+  max-height: 380px;
+}
+
+.notifications-center-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.notifications-center-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notifications-center-item:hover {
+  background: #f9f9f9;
+}
+
+.notifications-center-item.read {
+  background: white;
+}
+
+.notifications-center-item:not(.read) {
+  background: #FFF9F5;
+}
+
+.notifications-center-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.notifications-center-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifications-center-item-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.notifications-center-item-body {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notifications-center-item-time {
+  font-size: 11px;
+  color: #999;
+}

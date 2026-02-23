@@ -1,0 +1,150 @@
+.client-appointments-page {
+  padding-bottom: 100px;
+}
+
+.client-appointments-page .cliente-page-header h1 {
+  margin-bottom: 4px;
+}
+
+.client-appointments-btn-new {
+  display: inline-block;
+  margin-bottom: 24px;
+  padding: 12px 24px;
+  background: #FF6B4A;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+
+.client-appointments-btn-new:hover {
+  background: #e55a3a;
+  color: white;
+}
+
+.client-appointments-section {
+  margin-bottom: 28px;
+}
+
+.client-appointments-section h2 {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.client-appointments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.client-appointments-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 10px;
+}
+
+.client-appointments-item.upcoming {
+  border-left: 4px solid #FF6B4A;
+}
+
+.client-appointments-item.past.cancelled {
+  opacity: 0.7;
+}
+
+.appointment-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.appointment-pet {
+  font-weight: 600;
+  color: #212121;
+}
+
+.appointment-service {
+  color: #555;
+}
+
+.appointment-datetime {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.appointment-status {
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.appointment-status.status-confirmed {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.appointment-status.status-checked_in,
+.appointment-status.status-in_progress {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.appointment-status.status-completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.appointment-status.status-cancelled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.btn-cancel-appointment {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-cancel-appointment:hover:not(:disabled) {
+  background: #c82333;
+}
+
+.btn-cancel-appointment:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.client-appointments-list-past .client-appointments-item {
+  border-left: none;
+}
+
+.client-appointments-empty {
+  padding: 32px;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  color: #666;
+}
+
+.client-appointments-empty a {
+  color: #FF6B4A;
+  font-weight: 600;
+  margin-top: 8px;
+  display: inline-block;
+}

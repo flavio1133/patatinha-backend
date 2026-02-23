@@ -1,0 +1,151 @@
+.cliente-enter-code-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 24px;
+}
+
+.cliente-enter-code-container {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.code-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.code-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.code-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+}
+
+.code-header p {
+  color: #666;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.code-input {
+  padding: 16px;
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+  text-align: center;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: #ff6b4a;
+}
+
+.code-error {
+  color: #991b1b;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.btn-validate {
+  padding: 16px;
+  background: #ff6b4a;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn-validate:hover:not(:disabled) {
+  background: #e55a3a;
+}
+
+.btn-validate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.code-validated {
+  text-align: center;
+}
+
+.code-validated h3 {
+  margin: 0 0 20px 0;
+  color: #166534;
+}
+
+.company-preview {
+  margin-bottom: 24px;
+}
+
+.company-preview img,
+.company-logo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  display: block;
+}
+
+.company-logo-placeholder {
+  background: #fef3c7;
+  font-size: 2.5rem;
+  line-height: 80px;
+}
+
+.company-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.auth-required {
+  margin: 16px 0;
+  color: #666;
+}
+
+.auth-required a {
+  color: #ff6b4a;
+  font-weight: 500;
+}
+
+.btn-confirm {
+  padding: 16px 32px;
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.code-footer {
+  margin-top: 32px;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+}

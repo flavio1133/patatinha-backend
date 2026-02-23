@@ -1,0 +1,36 @@
+========================================
+  CONTA COM 3 PETS EXPERIMENTAIS
+========================================
+
+Pets não têm login. Quem acessa o sistema é o DONO (cliente).
+Use o login abaixo para entrar na Área do Cliente e ver os 3 pets e os serviços.
+
+----------------------------------------
+  LOGIN DO DONO (cliente)
+----------------------------------------
+  E-mail: joao@teste.com
+  Senha:  joao123
+
+----------------------------------------
+  3 PETS CADASTRADOS
+----------------------------------------
+  1. Thor   – Pastor Alemão (cachorro), 2 anos
+  2. Mel    – Golden Retriever (cachorro), 4 anos
+  3. Bob    – SRD (gato), 1 ano
+
+----------------------------------------
+  SERVIÇOS AGENDADOS PARA ESSES PETS
+----------------------------------------
+  • Thor – Banho e Tosa   (hoje, 11:00)
+  • Mel  – Consulta       (amanhã, 10:00)
+  • Bob  – Banho          (depois de amanhã, 16:00)
+
+========================================
+  COMO USAR
+========================================
+1. Acesse o site (ex.: http://localhost:3009)
+2. Clique em "Quero cuidar do meu pet!"
+3. Entre com: joao@teste.com / joao123
+4. Na área do cliente você verá os 3 pets e os próximos agendamentos.
+
+========================================

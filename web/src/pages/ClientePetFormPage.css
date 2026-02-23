@@ -1,0 +1,95 @@
+.cliente-pet-form-page .back-link {
+  color: #666;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.cliente-pet-form-page .back-link:hover {
+  color: #FF6B4A;
+}
+
+.form-card-pet {
+  max-width: 480px;
+}
+
+.form-pet .form-group {
+  margin-bottom: 16px;
+}
+
+.form-pet .form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-pet .form-group input,
+.form-pet .form-group select,
+.form-pet .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.form-pet .form-group input:focus,
+.form-pet .form-group select:focus,
+.form-pet .form-group textarea:focus {
+  outline: none;
+  border-color: #FF6B4A;
+  box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.2);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-pet .form-error {
+  color: #c62828;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-submit-pet {
+  background: #FF6B4A;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-submit-pet:hover:not(:disabled) {
+  background: #e55a3a;
+}
+
+.btn-submit-pet:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-cancel-pet {
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: #f0f0f0;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.btn-cancel-pet:hover {
+  background: #e0e0e0;
+  color: #212121;
+}

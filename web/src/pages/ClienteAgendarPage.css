@@ -1,0 +1,178 @@
+.cliente-agendar {
+  min-height: 100vh;
+  background: #F9F9F9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.cliente-agendar-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  max-width: 400px;
+  text-align: center;
+}
+
+.cliente-agendar-form {
+  max-width: 420px;
+  text-align: left;
+}
+
+.form-agendar .form-group {
+  margin-bottom: 16px;
+}
+
+.form-agendar label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.form-agendar select,
+.form-agendar input,
+.form-agendar textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.form-agendar textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.btn-agendar-submit {
+  width: 100%;
+  padding: 14px;
+  background: #FF6B4A;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-agendar-submit:hover:not(:disabled) {
+  background: #e55a3a;
+}
+
+.btn-agendar-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-voltar-link {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.btn-voltar-link:hover {
+  color: #FF6B4A;
+}
+
+.agendar-empty {
+  padding: 20px 0;
+}
+
+.agendar-empty p {
+  margin-bottom: 12px;
+}
+
+.cliente-agendar-card h1 {
+  font-size: 1.5rem;
+  color: #212121;
+  margin-bottom: 12px;
+}
+
+.cliente-agendar-card p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.btn-voltar {
+  display: inline-block;
+  background: #FF6B4A;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 24px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btn-voltar:hover {
+  background: #e55a3a;
+  color: white;
+}
+
+.cliente-agendar-page { padding-bottom: 100px; }
+.form-agendar-full { max-width: 700px; }
+.form-row-agendar { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.form-agendar-full .form-group label { display: block; font-weight: 600; color: #333; margin-bottom: 6px; }
+.form-agendar-full .form-group select,
+.form-agendar-full .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; }
+.form-agendar-full .form-group textarea { resize: vertical; min-height: 60px; margin-bottom: 16px; }
+
+.calendar-section { margin-bottom: 24px; }
+.calendar-section > label { display: block; font-weight: 600; color: #333; margin-bottom: 12px; }
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 10px;
+}
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.calendar-day .day-num { font-weight: 700; color: #212121; }
+.calendar-day .day-month { font-size: 0.75rem; color: #666; text-transform: lowercase; }
+.calendar-day:hover:not(.past) { border-color: #FF6B4A; background: #fff5f2; }
+.calendar-day.selected { border-color: #FF6B4A; background: #FF6B4A; color: white; }
+.calendar-day.selected .day-num, .calendar-day.selected .day-month { color: white; }
+.calendar-day.past { opacity: 0.5; cursor: not-allowed; }
+
+.slots-section { margin-bottom: 20px; }
+.slots-section > label { display: block; font-weight: 600; color: #333; margin-bottom: 10px; }
+.slots-loading, .slots-empty { color: #666; margin: 8px 0; }
+.slots-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.slot-btn {
+  padding: 10px 18px;
+  border: 2px solid #eee;
+  border-radius: 10px;
+  background: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+.slot-btn:hover { border-color: #FF6B4A; background: #fff5f2; }
+.slot-btn.selected { border-color: #FF6B4A; background: #FF6B4A; color: white; }
+.btn-agendar-submit { margin-top: 16px; padding: 14px; background: #FF6B4A; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; max-width: 320px; }
+.btn-agendar-submit:hover:not(:disabled) { background: #e55a3a; }
+.btn-agendar-submit:disabled { opacity: 0.6; cursor: not-allowed; }

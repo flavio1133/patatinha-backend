@@ -1,0 +1,75 @@
+═══════════════════════════════════════════════════════════════
+  🐾 PATATINHA - COMO INICIAR O SISTEMA
+═══════════════════════════════════════════════════════════════
+
+📌 MÉTODO MAIS FÁCIL (RECOMENDADO):
+═══════════════════════════════════════════════════════════════
+
+1️⃣ PRIMEIRA VEZ - Instalar Dependências:
+   → Clique duas vezes em: instalar-dependencias.bat
+   → Aguarde terminar (5-10 minutos)
+   → Quando aparecer "TODAS AS DEPENDENCIAS FORAM INSTALADAS!", está pronto!
+
+2️⃣ INICIAR O BACKEND:
+   → Clique duas vezes em: iniciar-backend.bat
+   → Uma janela preta vai abrir
+   → Você deve ver: "🚀 Servidor rodando na porta 3000"
+   → NÃO FECHE esta janela!
+
+3️⃣ INICIAR O FRONTEND:
+   → Clique duas vezes em: iniciar-frontend.bat
+   → Outra janela preta vai abrir
+   → Você deve ver: "Local: http://localhost:3005/"
+   → NÃO FECHE esta janela também!
+
+4️⃣ ABRIR NO NAVEGADOR:
+   → Abra o Google Chrome
+   → Digite: http://localhost:3005
+   → Pressione Enter
+   → Pronto! 🎉
+
+═══════════════════════════════════════════════════════════════
+📌 MÉTODO MANUAL (Se os scripts não funcionarem):
+═══════════════════════════════════════════════════════════════
+
+1. Abra o PowerShell (Windows + R, digite "powershell", Enter)
+
+2. Instalar dependências do Backend:
+   cd C:\Users\livin\mypet\backend
+   npm install
+
+3. Instalar dependências do Frontend:
+   cd C:\Users\livin\mypet\web
+   npm install
+
+4. Abra OUTRO terminal e inicie o Backend:
+   cd C:\Users\livin\mypet\backend
+   npm run dev
+
+5. Abra MAIS UM terminal e inicie o Frontend:
+   cd C:\Users\livin\mypet\web
+   npm run dev
+
+6. Abra o navegador em: http://localhost:3005
+
+═══════════════════════════════════════════════════════════════
+❓ PROBLEMAS?
+═══════════════════════════════════════════════════════════════
+
+→ Se aparecer "npm não é reconhecido":
+  Baixe e instale o Node.js: https://nodejs.org/
+
+→ Se aparecer "porta já em uso":
+  Feche outros programas ou reinicie o computador
+
+→ Se o navegador mostrar erro:
+  Verifique se as duas janelas (backend e frontend) estão abertas
+  Aguarde alguns segundos e recarregue a página (F5)
+
+═══════════════════════════════════════════════════════════════
+📞 PRECISA DE MAIS AJUDA?
+═══════════════════════════════════════════════════════════════
+
+Leia o arquivo: GUIA_VISUAL.md
+
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,32 @@
+.form-card-perfil { max-width: 420px; }
+.form-perfil .form-group { margin-bottom: 16px; }
+.form-perfil .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #333; }
+.form-perfil .form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+}
+.form-perfil .form-group input:focus {
+  outline: none;
+  border-color: #FF6B4A;
+}
+.form-perfil .input-disabled { background: #f5f5f5; color: #666; }
+.form-perfil .hint { font-size: 0.8rem; color: #666; margin-top: 4px; display: block; }
+.form-divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+.form-perfil h3 { font-size: 1rem; margin-bottom: 12px; color: #212121; }
+.form-success { color: #2e7d32; margin-bottom: 12px; }
+.form-perfil .form-error { color: #c62828; margin-bottom: 12px; }
+.btn-submit-perfil {
+  background: #FF6B4A;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.btn-submit-perfil:hover:not(:disabled) { background: #e55a3a; }
+.btn-submit-perfil:disabled { opacity: 0.7; cursor: not-allowed; }

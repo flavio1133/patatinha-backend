@@ -1,0 +1,138 @@
+.customers-page {
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #45a049;
+}
+
+.customers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.customer-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  gap: 16px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.customer-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.customer-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #4CAF50;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.customer-info {
+  flex: 1;
+}
+
+.customer-info h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #212121;
+}
+
+.customer-info p {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0;
+}
+
+.customer-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.customers-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.stat-mini {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.stat-mini span { font-weight: 700; font-size: 20px; color: #4CAF50; display: block; margin-bottom: 4px; }
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-actions button { padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; }
+.header-actions button.active { background: #4CAF50; color: white; border-color: #4CAF50; }
+
+.customers-table-wrap { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow-x: auto; }
+.customers-table { width: 100%; border-collapse: collapse; }
+.customers-table th, .customers-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #eee; }
+.customers-table th { background: #f8f9fa; font-weight: 600; font-size: 13px; color: #495057; }
+.customer-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #212121; font-weight: 500; }
+.customer-link:hover { color: #4CAF50; }
+.customer-avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%; }
+
+.customers-error { text-align: center; padding: 24px; }
+.customers-error p { margin-bottom: 16px; color: #c62828; }
+.modal-new-customer .form-group { margin-bottom: 16px; }
+.modal-new-customer .form-group label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 6px; }
+.modal-new-customer .form-group input,
+.modal-new-customer .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.modal-new-customer .form-group textarea { resize: vertical; min-height: 56px; }
+.modal-new-customer .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+.modal-new-customer .btn-secondary { padding: 10px 18px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.modal-new-customer h3 { margin: 0 0 20px 0; font-size: 1.25rem; }
