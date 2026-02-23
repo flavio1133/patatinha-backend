@@ -38,7 +38,15 @@ O frontend (Firebase) chama a API do Render. Se o backend no Render não for atu
    - Nome sugerido: `mypet` ou `patatinha-petshop`
    - Não marque "Add README" se o projeto já tiver arquivos
 
-3. **Conectar e enviar o código**:
+3. **Conectar e enviar o código**  
+   Pode usar o script (na raiz do projeto):
+
+   ```powershell
+   .\conectar-github.ps1
+   ```
+   O script pede a URL do repositório (ex.: `https://github.com/SEU_USUARIO/patatinha-petshop`) e faz `git remote add origin` + `git push -u origin main`.
+
+   Ou manualmente:
    ```powershell
    git add .
    git commit -m "Código atual: backend disponibilidade, configurações, frontend"
