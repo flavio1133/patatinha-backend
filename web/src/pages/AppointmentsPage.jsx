@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { appointmentsAPI, customersAPI, petsAPI, professionalsAPI } from '../services/api';
-import { mockAppointments } from '../data/mockData';
 import './AppointmentsPage.css';
 
 // Status da API -> rótulo e filtro (usar chave da API no select)
@@ -194,7 +193,7 @@ export default function AppointmentsPage() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['appointments', dateStr, view],
     queryFn: () => appointmentsAPI.getAll({ date: dateStr }).then((res) => res.data),
-    retry: false,
+    retry: 1,
   });
 
   const checkInMutation = useMutation({
@@ -204,10 +203,9 @@ export default function AppointmentsPage() {
 
   const rawList = useMemo(() => {
     const fromApi = data?.appointments;
-    if (Array.isArray(fromApi) && fromApi.length > 0) return fromApi;
-    if (Array.isArray(fromApi)) return fromApi;
-    return Array.isArray(mockAppointments) ? mockAppointments : [];
-  }, [data?.appointments]);
+    if (data !== undefined && Array.isArray(fromApi)) return fromApi;
+    return [];
+  }, [data?.appointments, data]);
   const list = rawList.filter(
     (a) => (!filterStatus || a.status === filterStatus) && (!filterPro || a.professionalName === filterPro)
   );

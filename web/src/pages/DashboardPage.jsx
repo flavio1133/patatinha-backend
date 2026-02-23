@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const { data: apiData, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: () => adminAPI.getDashboard().then((res) => res.data),
-    retry: false,
+    retry: 1,
   });
 
   const d = apiData || mockDashboard;
@@ -26,7 +26,7 @@ export default function DashboardPage() {
     <div className="dashboard">
       {isError && (
         <div className="dashboard-api-error">
-          <p>Não foi possível conectar ao servidor. Verifique sua conexão.</p>
+          <p>Não foi possível conectar ao servidor. Verifique a conexão e se está logado como empresa (ou se a API está online).</p>
           <button type="button" className="btn-retry" onClick={() => refetch()}>Tentar novamente</button>
         </div>
       )}

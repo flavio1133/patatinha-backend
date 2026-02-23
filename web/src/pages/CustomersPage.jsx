@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersAPI } from '../services/api';
-import { mockCustomers } from '../data/mockData';
 import './CustomersPage.css';
 
 export default function CustomersPage() {
@@ -15,7 +14,7 @@ export default function CustomersPage() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['customers', search],
     queryFn: () => customersAPI.getAll(search).then((res) => res.data),
-    retry: false,
+    retry: 1,
   });
 
   const createMutation = useMutation({
@@ -30,7 +29,7 @@ export default function CustomersPage() {
     },
   });
 
-  const customers = data?.customers?.length ? data.customers : mockCustomers;
+  const customers = data !== undefined ? (data?.customers || []) : [];
   const filtered = useMemo(() => {
     if (!search.trim()) return customers;
     const s = search.trim().toLowerCase();
@@ -92,7 +91,7 @@ export default function CustomersPage() {
         <div className="loading">Carregando...</div>
       ) : isError ? (
         <div className="customers-error">
-          <p>Não foi possível carregar os clientes.</p>
+          <p>Não foi possível carregar os clientes. Verifique a conexão e se a API está online (Render).</p>
           <button type="button" className="btn-primary" onClick={() => refetch()}>Tentar novamente</button>
         </div>
       ) : viewMode === 'tabela' ? (

@@ -48,7 +48,8 @@ function GestaoRoutes() {
   const { isAuthenticated, user } = useAuth();
   const companyToken = localStorage.getItem('company_token');
   const companyRole = localStorage.getItem('company_role');
-  const isCompanyOwner = companyToken && companyRole === 'owner';
+  const companyId = localStorage.getItem('company_id');
+  const isCompanyOwner = !!(companyToken && (companyRole === 'owner' || companyId));
 
   // Dono da empresa com company_token: pode acessar o painel administrativo
   if (isCompanyOwner) {
