@@ -1,100 +1,52 @@
-.admin-pets-page {
-  width: 100%;
-}
+/* Dark theme - Pets (admin) */
+.admin-pets-page { width: 100%; }
 
-.admin-pets-header {
-  margin-bottom: 24px;
-}
-
-.admin-pets-header h1 {
-  font-size: 24px;
-  margin-bottom: 4px;
-  color: #212121;
-}
-
-.admin-pets-sub {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 16px;
-}
-
-.admin-pets-actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.admin-pets-actions .search-box {
-  flex: 1;
-  max-width: 400px;
-}
-
+.admin-pets-header { margin-bottom: 28px; }
+.admin-pets-header h1 { font-size: 1.5rem; margin-bottom: 4px; color: #f0f0f0; font-weight: 600; }
+.admin-pets-sub { font-size: 14px; color: #a0a0a0; margin-bottom: 20px; }
+.admin-pets-actions { display: flex; gap: 20px; align-items: center; }
+.admin-pets-actions .search-box { flex: 1; max-width: 400px; }
 .admin-pets-actions .search-box input {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 1px solid #404040;
+  border-radius: 10px;
   font-size: 14px;
+  background: #252525;
+  color: #e4e4e4;
 }
 
-.admin-pets-loading {
-  padding: 40px;
-  text-align: center;
-  color: #666;
-}
+.admin-pets-loading { padding: 48px; text-align: center; color: #909090; }
 
 .admin-pets-table-wrapper {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
   overflow-x: auto;
 }
 
-.admin-pets-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+.admin-pets-table { width: 100%; border-collapse: collapse; }
 .admin-pets-table th,
-.admin-pets-table td {
-  padding: 14px 16px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
+.admin-pets-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.06); color: #c0c0c0; }
 .admin-pets-table th {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.06);
   font-weight: 600;
   font-size: 13px;
-  color: #495057;
+  color: #e4e4e4;
 }
-
-.admin-pets-table tbody tr:hover {
-  background: #f8f9fa;
-}
-
-.admin-pets-table .pet-name {
-  font-weight: 500;
-  color: #212121;
-}
-
-.admin-pets-empty {
-  text-align: center;
-  padding: 40px !important;
-  color: #666;
-}
+.admin-pets-table tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+.admin-pets-table .pet-name { font-weight: 500; color: #f0f0f0; }
+.admin-pets-empty { text-align: center; padding: 48px !important; color: #808080; }
 
 .btn-admin-view {
-  padding: 6px 12px;
-  background: #4CAF50;
+  padding: 8px 14px;
+  background: #2e7d32;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   cursor: pointer;
   transition: background 0.2s;
 }
-
-.btn-admin-view:hover {
-  background: #45a049;
-}
+.btn-admin-view:hover { background: #388e3c; }

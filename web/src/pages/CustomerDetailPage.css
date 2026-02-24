@@ -1,28 +1,44 @@
+/* Dark theme - Detalhe do cliente */
 .customer-detail { width: 100%; }
-.back-link { display: inline-block; margin-bottom: 20px; color: #4CAF50; text-decoration: none; }
-.customer-header { display: flex; gap: 24px; margin-bottom: 24px; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.customer-avatar-lg { width: 80px; height: 80px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; }
-.customer-main h1 { margin: 0 0 8px 0; font-size: 24px; }
-.customer-main p { margin: 4px 0; color: #666; }
-.customer-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-.customer-tabs button { padding: 10px 16px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; }
-.customer-tabs button.active { background: #4CAF50; color: white; border-color: #4CAF50; }
-.tab-content { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-.tab-content h3 { margin: 0 0 12px 0; }
+.back-link { display: inline-block; margin-bottom: 24px; color: #66bb6a; text-decoration: none; font-weight: 500; }
+.customer-header {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 28px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 28px;
+  border-radius: 16px;
+}
+.customer-avatar-lg { width: 80px; height: 80px; border-radius: 50%; background: #2e7d32; color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold; }
+.customer-main h1 { margin: 0 0 8px 0; font-size: 24px; color: #f0f0f0; }
+.customer-main p { margin: 4px 0; color: #a0a0a0; }
+.customer-tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+.customer-tabs button { padding: 10px 16px; border: 1px solid #404040; background: #252525; color: #c0c0c0; border-radius: 10px; cursor: pointer; }
+.customer-tabs button.active { background: #2e7d32; color: white; border-color: #2e7d32; }
+.tab-content {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 28px;
+  border-radius: 16px;
+}
+.tab-content h3 { margin: 0 0 16px 0; color: #e8e8e8; }
 .header-actions { margin-top: 12px; display: flex; gap: 8px; }
-.header-actions button, .header-actions a { padding: 8px 16px; border-radius: 8px; font-size: 14px; text-decoration: none; }
-.header-actions button { background: #4CAF50; color: white; border: none; cursor: pointer; }
+.header-actions button, .header-actions a { padding: 8px 16px; border-radius: 10px; font-size: 14px; text-decoration: none; }
+.header-actions button { background: #2e7d32; color: white; border: none; cursor: pointer; }
 .header-actions a { background: #25D366; color: white; }
 .pets-list { list-style: none; padding: 0; }
-.pets-list li { padding: 8px 0; border-bottom: 1px solid #eee; }
-.pets-list a { color: #4CAF50; text-decoration: none; }
-.pet-meta { color: #666; font-size: 0.9em; }
+.pets-list li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.pets-list a { color: #66bb6a; text-decoration: none; }
+.pet-meta { color: #808080; font-size: 0.9em; }
 .info-list { margin: 0; }
-.info-list dt { font-weight: 600; color: #333; margin-top: 12px; }
-.info-list dd { margin: 4px 0 0 0; color: #555; }
+.info-list dt { font-weight: 600; color: #c0c0c0; margin-top: 12px; }
+.info-list dd { margin: 4px 0 0 0; color: #a0a0a0; }
 .customer-appointments-list { list-style: none; padding: 0; }
-.customer-appointments-list li { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
-.customer-appointments-list .apt-date { font-weight: 600; }
-.customer-appointments-list .apt-status { font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #f0f0f0; }
-.customer-appointments-list li.status-completed .apt-status { background: #e8f5e9; color: #2e7d32; }
-.customer-appointments-list li.status-cancelled .apt-status { background: #ffebee; color: #c62828; }
+.customer-appointments-list li { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); color: #c0c0c0; }
+.customer-appointments-list .apt-date { font-weight: 600; color: #e4e4e4; }
+.customer-appointments-list .apt-status { font-size: 12px; padding: 4px 10px; border-radius: 6px; }
+.customer-appointments-list li.status-completed .apt-status { background: rgba(46, 125, 50, 0.25); color: #a5d6a7; }
+.customer-appointments-list li.status-cancelled .apt-status { background: rgba(229, 57, 53, 0.25); color: #ef9a9a; }

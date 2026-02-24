@@ -92,11 +92,11 @@ function GestaoRoutes() {
         <Routes>
           <Route path="/gestao/dashboard" element={<DashboardPage />} />
           <Route path="/gestao/customers" element={<CustomersPage />} />
-            <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
+          <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
           <Route path="/gestao/appointments" element={<AppointmentsPage />} />
           <Route path="/gestao/inventory" element={<InventoryPage />} />
           <Route path="/gestao/pets" element={<AdminPetsPage />} />
-            <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
+          <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
           <Route path="/gestao/pdv" element={<PDVPage />} />
           <Route path="/gestao/finance" element={<FinancePage />} />
           <Route path="/gestao/relatorios" element={<RelatoriosPage />} />

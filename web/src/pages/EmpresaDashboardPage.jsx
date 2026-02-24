@@ -85,7 +85,7 @@ export default function EmpresaDashboardPage() {
           <section className="trial-card">
             <h3>🎁 Período de teste</h3>
             <p>Você tem <strong>15 dias</strong> de teste grátis.</p>
-            <p><Link to="/assinatura" style={{ color: '#ff6b4a', fontWeight: 600 }}>Escolher plano</Link> para continuar após o trial</p>
+            <p><Link to="/assinatura" style={{ color: '#ea580c', fontWeight: 600 }}>Escolher plano</Link> para continuar após o trial</p>
             {trialEnd && (
               <p className="trial-date">
                 Expira em: {trialEnd.toLocaleDateString('pt-BR')}
@@ -97,34 +97,25 @@ export default function EmpresaDashboardPage() {
           </section>
         )}
 
+        {role === 'owner' && (
         <section className="actions-grid">
-          <Link to="/gestao/dashboard" className="action-card">
-            <span className="action-icon">📋</span>
-            <h4>Painel administrativo</h4>
-            <p>Agenda, clientes, estoque, finanças</p>
-          </Link>
-          {role === 'owner' && (
-            <>
               <Link to="/company/assinatura" className="action-card">
                 <span className="action-icon">💳</span>
                 <h4>Minha assinatura</h4>
                 <p>Plano, pagamentos e cobrança</p>
               </Link>
-              <Link to="/cadastro-empresa" className="action-card" style={{ opacity: 0.8 }}>
+              <Link to="/cadastro-empresa" className="action-card">
                 <span className="action-icon">✏️</span>
                 <h4>Completar cadastro</h4>
                 <p>Atualizar dados da empresa</p>
               </Link>
-            </>
-          )}
-          {role === 'owner' && (
-            <Link to="/company/codigos" className="action-card">
-              <span className="action-icon">🎫</span>
-              <h4>Códigos de acesso</h4>
-              <p>Gerar e compartilhar códigos para clientes</p>
-            </Link>
-          )}
+              <Link to="/company/codigos" className="action-card">
+                <span className="action-icon">🎫</span>
+                <h4>Códigos de acesso</h4>
+                <p>Gerar e compartilhar códigos para clientes</p>
+              </Link>
         </section>
+        )}
 
         <section className="company-summary">
           <h3>Dados da empresa</h3>

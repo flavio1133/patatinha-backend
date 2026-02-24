@@ -1,6 +1,6 @@
 # Estado do projeto e próximos passos – Patatinha
 
-**Atualizado para refletir:** deploy online, conta contato@patatinha.com, agenda e integração com a área do cliente. **Última atualização:** frontend com correção do token da empresa (menus e funções usam `company_token` em todas as chamadas), mensagens de erro claras na Agenda e no modal de novo agendamento, e deploy no Firebase concluído.
+**Atualizado para refletir:** deploy online, conta contato@patatinha.com, agenda e integração com a área do cliente. **Última atualização:** frontend com correção do token da empresa, mensagens de erro claras na Agenda e no modal de novo agendamento, deploy no Firebase concluído. Git: remote `origin` apontando para `https://github.com/flavio1133/patatinha-backend.git`, branch `main` com upstream configurado; push funcionando.
 
 ---
 

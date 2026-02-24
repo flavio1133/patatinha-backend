@@ -251,8 +251,8 @@ export const financeAPI = {
 };
 
 export const adminAPI = {
-  getDashboard: () =>
-    api.get('/admin/dashboard'),
+  getDashboard: (params) =>
+    api.get('/admin/dashboard', { params }),
   getConsolidatedReport: (params) =>
     api.get('/admin/reports/consolidated', { params }),
 };

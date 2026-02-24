@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChart, Pie, Cell, Tooltip as PieTooltip } from 'recharts';
@@ -6,17 +7,22 @@ import { adminAPI } from '../services/api';
 import { mockDashboard } from '../data/mockData';
 import './DashboardPage.css';
 
-const COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#607D8B'];
+const COLORS = ['#66bb6a', '#42a5f5', '#ffa726', '#ab47bc', '#78909c'];
+
+const PERIOD_LABELS = { hoje: 'Hoje', semana: 'Última semana', mes: 'Mês atual' };
 
 export default function DashboardPage() {
+  const [period, setPeriod] = useState('hoje');
+
   const { data: apiData, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admin-dashboard'],
-    queryFn: () => adminAPI.getDashboard().then((res) => res.data),
+    queryKey: ['admin-dashboard', period],
+    queryFn: () => adminAPI.getDashboard({ period }).then((res) => res.data),
     retry: 1,
   });
 
   const d = apiData || mockDashboard;
   const dashboard = { ...mockDashboard, ...d };
+  const useDemoData = isError || !apiData;
 
   if (isLoading && !apiData) {
     return <div className="loading">Carregando...</div>;
@@ -24,98 +30,128 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard">
-      {isError && (
+      {/* Filtro de período */}
+      <div className="dashboard-filters">
+        <span className="dashboard-filters-label">Período:</span>
+        {(['hoje', 'semana', 'mes']).map((p) => (
+          <button
+            key={p}
+            type="button"
+            className={'dashboard-filter-btn' + (period === p ? ' active' : '')}
+            onClick={() => setPeriod(p)}
+          >
+            {PERIOD_LABELS[p]}
+          </button>
+        ))}
+      </div>
+
+      {useDemoData && (
+        <div className="dashboard-demo-banner">
+          <span>Dados de demonstração</span>
+          <button type="button" className="btn-retry-small" onClick={() => refetch()}>Tentar conectar à API</button>
+        </div>
+      )}
+
+      {isError && !apiData && (
         <div className="dashboard-api-error">
           <p>Não foi possível conectar ao servidor. Verifique a conexão e se está logado como empresa (ou se a API está online).</p>
           <button type="button" className="btn-retry" onClick={() => refetch()}>Tentar novamente</button>
         </div>
       )}
-      <div className="dashboard-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📅</div>
-          <div className="stat-content">
-            <div className="stat-value">{dashboard?.appointments?.total ?? 0}</div>
-            <div className="stat-label">Agendamentos Hoje</div>
-            {dashboard?.appointments?.attended != null && (
-              <div className="stat-extra">Comparecimento: {dashboard.appointments.attended}</div>
-            )}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">💰</div>
-          <div className="stat-content">
-            <div className="stat-value">R$ {Number(dashboard?.sales?.revenue ?? 0).toFixed(2)}</div>
-            <div className="stat-label">Faturamento Hoje</div>
-            {dashboard?.sales?.meta != null && (
-              <div className="stat-extra">Meta: R$ {dashboard.sales.meta?.toFixed(0)}</div>
-            )}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <div className="stat-value">{dashboard?.customers?.total ?? dashboard?.subscriptions?.active ?? 0}</div>
-            <div className="stat-label">Clientes Ativos</div>
-            {dashboard?.customers?.new != null && (
-              <div className="stat-extra">Novos: {dashboard.customers.new}</div>
-            )}
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">📦</div>
-          <div className="stat-content">
-            <div className="stat-value">{dashboard?.stock?.critical ?? dashboard?.alerts?.lowStock ?? 0}</div>
-            <div className="stat-label">Estoque Crítico</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Gráficos */}
-      <div className="dashboard-charts">
-        <div className="chart-card">
-          <h3>Faturamento (últimos 7 dias)</h3>
-          <div className="chart-inner">
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={dashboard?.revenueChart || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="dia" />
-                <YAxis />
-                <Tooltip formatter={(v) => ['R$ ' + v, 'Faturamento']} />
-                <Line type="monotone" dataKey="valor" stroke="#4CAF50" strokeWidth={2} dot={{ fill: '#4CAF50' }} />
-              </LineChart>
-            </ResponsiveContainer>
+      {/* KPIs */}
+      <section className="dashboard-kpis">
+        <h2 className="dashboard-section-title">Indicadores principais</h2>
+        <div className="dashboard-grid">
+          <div className="stat-card">
+            <div className="stat-icon">📅</div>
+            <div className="stat-content">
+              <div className="stat-value">{dashboard?.appointments?.total ?? 0}</div>
+              <div className="stat-label">Agendamentos {period === 'hoje' ? 'Hoje' : 'no período'}</div>
+              {(dashboard?.appointments?.attended != null || dashboard?.appointments?.completed != null) && (
+                <div className="stat-extra">Comparecimento: {dashboard.appointments.attended ?? dashboard.appointments.completed ?? 0}</div>
+              )}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">💰</div>
+            <div className="stat-content">
+              <div className="stat-value">R$ {Number(dashboard?.sales?.revenue ?? 0).toFixed(2)}</div>
+              <div className="stat-label">{period === 'hoje' ? 'Faturamento Hoje' : 'Vendas no período'}</div>
+              {dashboard?.sales?.meta != null && period === 'hoje' && (
+                <div className="stat-extra">Meta: R$ {Number(dashboard.sales.meta).toFixed(0)}</div>
+              )}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">👥</div>
+            <div className="stat-content">
+              <div className="stat-value">{dashboard?.customers?.total ?? dashboard?.subscriptions?.active ?? 0}</div>
+              <div className="stat-label">Clientes ativos</div>
+              {dashboard?.customers?.new != null && (
+                <div className="stat-extra">Novos (30 dias): {dashboard.customers.new}</div>
+              )}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">📦</div>
+            <div className="stat-content">
+              <div className="stat-value">{dashboard?.stock?.critical ?? dashboard?.alerts?.lowStock ?? 0}</div>
+              <div className="stat-label">Estoque crítico</div>
+            </div>
           </div>
         </div>
-        <div className="chart-card">
-          <h3>Serviços mais realizados</h3>
-          <div className="chart-inner">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={dashboard?.servicesChart || []} dataKey="quantidade" nameKey="nome" cx="50%" cy="50%" outerRadius={70} label>
-                  {(dashboard?.servicesChart || []).map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <PieTooltip />
-              </PieChart>
-            </ResponsiveContainer>
+      </section>
+
+      {/* Gráficos de tendência */}
+      <section className="dashboard-charts-section">
+        <h2 className="dashboard-section-title">Tendências</h2>
+        <div className="dashboard-charts">
+          <div className="chart-card">
+            <h3>Faturamento (últimos 7 dias)</h3>
+            <div className="chart-inner">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={dashboard?.revenueChart || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="dia" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => ['R$ ' + v, 'Faturamento']} contentStyle={{ background: '#252525', border: '1px solid #333', borderRadius: 8 }} labelStyle={{ color: '#e4e4e4' }} />
+                  <Line type="monotone" dataKey="valor" stroke="#66bb6a" strokeWidth={2} dot={{ fill: '#66bb6a' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="chart-card">
+            <h3>Serviços mais realizados</h3>
+            <div className="chart-inner">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={dashboard?.servicesChart || []} dataKey="quantidade" nameKey="nome" cx="50%" cy="50%" outerRadius={70} label>
+                    {(dashboard?.servicesChart || []).map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <PieTooltip contentStyle={{ background: '#252525', border: '1px solid #333', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="chart-card chart-wide">
+            <h3>Horários de pico</h3>
+            <div className="chart-inner">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dashboard?.peakHours || []}>
+                  <BarGrid strokeDasharray="3 3" />
+                  <BarX dataKey="hora" />
+                  <BarY />
+                  <BarTooltip contentStyle={{ background: '#252525', border: '1px solid #333', borderRadius: 8 }} />
+                  <Bar dataKey="qtd" fill="#42a5f5" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-        <div className="chart-card chart-wide">
-          <h3>Horários de pico</h3>
-          <div className="chart-inner">
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={dashboard?.peakHours || []}>
-                <BarGrid strokeDasharray="3 3" />
-                <BarX dataKey="hora" />
-                <BarY />
-                <BarTooltip />
-                <Bar dataKey="qtd" fill="#2196F3" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      </section>
 
       <div className="dashboard-row">
         {/* Próximos agendamentos */}
@@ -126,7 +162,7 @@ export default function DashboardPage() {
               <div key={apt.id} className="upcoming-item">
                 <span className="upcoming-time">{apt.time}</span>
                 <div>
-                  <strong>{apt.petName}</strong> - {apt.service}
+                  <strong>{apt.petName}</strong> – {apt.service}
                   <span className="upcoming-customer">{apt.customerName}</span>
                 </div>
                 <button type="button" className="btn-checkin" title="Check-in">✓</button>
@@ -157,7 +193,7 @@ export default function DashboardPage() {
             {(dashboard?.alerts?.paymentFailed ?? 0) > 0 && (
               <div className="alert-item error">💳 {dashboard.alerts.paymentFailed} pagamento(s) falhado(s)</div>
             )}
-            {!dashboard?.alerts?.lowStock && !dashboard?.alerts?.vaccines && !dashboard?.alerts?.billsToday && !dashboard?.alerts?.inactive30 && !dashboard?.alerts?.paymentFailed && (
+            {!(dashboard?.alerts?.lowStock || dashboard?.alerts?.vaccines || dashboard?.alerts?.billsToday || dashboard?.alerts?.inactive30 || dashboard?.alerts?.paymentFailed) && (
               <p className="empty-msg">Nenhum alerta no momento.</p>
             )}
           </div>
