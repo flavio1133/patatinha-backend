@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersAPI, petsAPI, appointmentsAPI } from '../services/api';
 import './CustomerDetailPage.css';
 
@@ -10,7 +10,11 @@ const TABS = ['info', 'pets', 'agendamentos', 'faturamento', 'anotacoes'];
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('info');
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' });
 
   const { data: customerData, isLoading: loadingCustomer } = useQuery({
     queryKey: ['customer', id],
@@ -32,6 +36,46 @@ export default function CustomerDetailPage() {
   const whatsappUrl = phone
     ? 'https://wa.me/55' + phone.replace(/\D/g, '')
     : '#';
+
+  const editMutation = useMutation({
+    mutationFn: (body) => customersAPI.update(customer.id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setEditOpen(false);
+    },
+    onError: (err) => {
+      // eslint-disable-next-line no-alert
+      alert(err.response?.data?.error || err.message || 'Erro ao atualizar cliente.');
+    },
+  });
+
+  const openEditModal = () => {
+    setEditForm({
+      name: customer.name || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+      address: customer.address || '',
+      notes: customer.notes || '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleSubmitEdit = (e) => {
+    e.preventDefault();
+    if (!editForm.name.trim() || !editForm.phone.trim()) {
+      // eslint-disable-next-line no-alert
+      alert('Nome e telefone são obrigatórios.');
+      return;
+    }
+    editMutation.mutate({
+      name: editForm.name.trim(),
+      phone: editForm.phone.trim(),
+      email: editForm.email.trim() || undefined,
+      address: editForm.address.trim() || undefined,
+      notes: editForm.notes.trim() || undefined,
+    });
+  };
 
   if (loadingCustomer && !customer) {
     return <div className="loading">Carregando...</div>;
@@ -59,7 +103,16 @@ export default function CustomerDetailPage() {
           {customer.phone && <p>Telefone: {customer.phone}</p>}
           {customer.email && <p>Email: {customer.email}</p>}
           <div className="header-actions">
-            <button type="button" className="btn-editar">Editar</button>
+            <button type="button" className="ui-btn ui-btn-secondary btn-editar" onClick={openEditModal}>
+              Editar
+            </button>
+            <button
+              type="button"
+              className="ui-btn ui-btn-primary-gestao btn-agendar-header"
+              onClick={() => navigate('/gestao/appointments', { state: { customerId: customer.id, customerName: customer.name } })}
+            >
+              Agendar serviço
+            </button>
             <a
               href={whatsappUrl}
               target="_blank"
@@ -147,6 +200,75 @@ export default function CustomerDetailPage() {
           </section>
         )}
       </div>
+
+      {editOpen && (
+        <div className="modal-overlay" onClick={() => !editMutation.isPending && setEditOpen(false)}>
+          <div className="modal-content modal-edit-customer" onClick={(e) => e.stopPropagation()}>
+            <h3>Editar cliente</h3>
+            <form onSubmit={handleSubmitEdit}>
+              <div className="form-group">
+                <label>Nome *</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Telefone *</label>
+                <input
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Endereço</label>
+                <input
+                  type="text"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label>Observações internas</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="ui-btn ui-btn-secondary"
+                  onClick={() => setEditOpen(false)}
+                  disabled={editMutation.isPending}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="ui-btn ui-btn-primary-gestao"
+                  disabled={editMutation.isPending}
+                >
+                  {editMutation.isPending ? 'Salvando...' : 'Salvar alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

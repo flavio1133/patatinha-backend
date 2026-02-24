@@ -25,10 +25,15 @@
   border-radius: 16px;
 }
 .tab-content h3 { margin: 0 0 16px 0; color: #e8e8e8; }
-.header-actions { margin-top: 12px; display: flex; gap: 8px; }
-.header-actions button, .header-actions a { padding: 8px 16px; border-radius: 10px; font-size: 14px; text-decoration: none; }
-.header-actions button { background: #2e7d32; color: white; border: none; cursor: pointer; }
-.header-actions a { background: #25D366; color: white; }
+.header-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.header-actions a {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-decoration: none;
+  background: #25D366;
+  color: white;
+}
 .pets-list { list-style: none; padding: 0; }
 .pets-list li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
 .pets-list a { color: #66bb6a; text-decoration: none; }

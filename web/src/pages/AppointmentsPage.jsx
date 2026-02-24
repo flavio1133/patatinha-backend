@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,9 +32,9 @@ const TIME_SLOTS = Array.from({ length: 20 }, (_, i) => {
 
 const HOURS = Array.from({ length: 13 }, (_, i) => 8 + i);
 
-function NewAppointmentModal({ onClose, onSuccess }) {
+function NewAppointmentModal({ onClose, onSuccess, initialCustomerId }) {
   const queryClient = useQueryClient();
-  const [customerId, setCustomerId] = useState('');
+  const [customerId, setCustomerId] = useState(initialCustomerId || '');
   const [petId, setPetId] = useState('');
   const [service, setService] = useState('banho');
   const [professionalId, setProfessionalId] = useState('');
@@ -186,6 +186,8 @@ function serviceLabel(service) {
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const initialCustomerIdFromState = location.state?.customerId ? String(location.state.customerId) : '';
   const [view, setView] = useState('dia');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filterStatus, setFilterStatus] = useState('');
@@ -411,6 +413,7 @@ export default function AppointmentsPage() {
         <NewAppointmentModal
           onClose={() => setModalOpen(false)}
           onSuccess={() => setModalOpen(false)}
+          initialCustomerId={initialCustomerIdFromState}
         />
       )}
     </div>

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { users } = require('./auth.routes');
 
 // TODO: Substituir por conexão com banco de dados
 // Estrutura de dados em memória para desenvolvimento
@@ -79,7 +81,7 @@ router.get('/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Criar novo cliente
+// Criar novo cliente (e opcionalmente usuário vinculado com senha padrão 123456)
 router.post('/', [
   authenticateToken,
   body('name').trim().notEmpty().withMessage('Nome é obrigatório'),
@@ -95,6 +97,30 @@ router.post('/', [
     return res.status(400).json({ error: 'Já existe um cliente com este telefone' });
   }
 
+  // Se tiver e-mail, garantir que exista (ou reutilizar) um usuário de login com senha padrão 123456
+  let userId = null;
+  if (email) {
+    const emailLower = email.trim().toLowerCase();
+    let existingUser = users.find(u => u.email && u.email.toLowerCase() === emailLower);
+
+    if (!existingUser) {
+      const hashedPassword = bcrypt.hashSync('123456', 10);
+      const newUser = {
+        id: users.length + 1,
+        name,
+        email,
+        password: hashedPassword,
+        phone: phone || null,
+        role: 'customer',
+        createdAt: new Date(),
+      };
+      users.push(newUser);
+      userId = newUser.id;
+    } else {
+      userId = existingUser.id;
+    }
+  }
+
   const newCustomer = {
     id: customersState.customerIdCounter++,
     name,
@@ -102,6 +128,7 @@ router.post('/', [
     email: email || null,
     address: address || null,
     notes: notes || null,
+    userId,
     photo: null,
     createdAt: new Date(),
     updatedAt: new Date(),
