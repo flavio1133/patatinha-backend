@@ -44,54 +44,42 @@ import { ClientProvider } from './contexts/ClientContext';
 import { BookingProvider } from './contexts/BookingContext';
 
 // Rotas protegidas para Gestão (auth OU dono da empresa com company_token)
-function GestaoGate() {
+function GestaoRoutes() {
   const { isAuthenticated, user } = useAuth();
   const companyToken = localStorage.getItem('company_token');
   const companyRole = localStorage.getItem('company_role');
   const companyId = localStorage.getItem('company_id');
   const isCompanyOwner = !!(companyToken && (companyRole === 'owner' || companyId));
 
-  if (isCompanyOwner) {
-    return (
-      <AdminProvider>
-        <Layout isCompanyMode />
-      </AdminProvider>
-    );
-  }
-  if (!isAuthenticated) {
+  if (!isCompanyOwner && !isAuthenticated) {
     return <Navigate to="/gestao/login" replace />;
   }
-  if (!['super_admin', 'master', 'manager', 'employee', 'financial'].includes(user?.role)) {
+  if (!isCompanyOwner && !['super_admin', 'master', 'manager', 'employee', 'financial'].includes(user?.role)) {
     return <Navigate to="/cliente/home" replace />;
   }
-  return (
-    <AdminProvider>
-      <Layout />
-    </AdminProvider>
-  );
-}
 
-function GestaoRoutes() {
-  return (
-    <Routes>
-      <Route path="/gestao/*" element={<GestaoGate />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="customers/:id" element={<CustomerDetailPage />} />
-        <Route path="appointments" element={<AppointmentsPage />} />
-        <Route path="inventory" element={<InventoryPage />} />
-        <Route path="pets" element={<AdminPetsPage />} />
-        <Route path="pets/:id" element={<AdminPetDetailPage />} />
-        <Route path="pdv" element={<PDVPage />} />
-        <Route path="finance" element={<FinancePage />} />
-        <Route path="relatorios" element={<RelatoriosPage />} />
-        <Route path="codigos" element={<CompanyInvitationCodesPage />} />
-        <Route path="configuracoes" element={<ConfiguracoesPage />} />
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
-      </Route>
-    </Routes>
+  const layout = (
+    <Layout isCompanyMode={isCompanyOwner}>
+      <Routes>
+        <Route path="/gestao" element={<Navigate to="/gestao/dashboard" replace />} />
+        <Route path="/gestao/dashboard" element={<DashboardPage />} />
+        <Route path="/gestao/customers" element={<CustomersPage />} />
+        <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
+        <Route path="/gestao/appointments" element={<AppointmentsPage />} />
+        <Route path="/gestao/inventory" element={<InventoryPage />} />
+        <Route path="/gestao/pets" element={<AdminPetsPage />} />
+        <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
+        <Route path="/gestao/pdv" element={<PDVPage />} />
+        <Route path="/gestao/finance" element={<FinancePage />} />
+        <Route path="/gestao/relatorios" element={<RelatoriosPage />} />
+        <Route path="/gestao/codigos" element={<CompanyInvitationCodesPage />} />
+        <Route path="/gestao/configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="/gestao/*" element={<Navigate to="/gestao/dashboard" replace />} />
+      </Routes>
+    </Layout>
   );
+
+  return <AdminProvider>{layout}</AdminProvider>;
 }
 
 // Rota protegida para Dashboard da Empresa
