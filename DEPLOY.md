@@ -4,6 +4,23 @@ Guia objetivo para build e deploy do frontend e do backend.
 
 ---
 
+## Serviços em produção (referência)
+
+| Serviço | URL | Dashboard |
+|--------|-----|-----------|
+| **Frontend (Vercel)** | https://patatinha-petshop.vercel.app | https://vercel.com/flavio1133s-projects/patatinha-petshop |
+| **Backend (Render)** | https://patatinha-petshop.onrender.com | https://dashboard.render.com → patatinha-backend |
+| **API Health** | https://patatinha-petshop.onrender.com/api/health | — |
+| **Firebase Hosting** | https://patatinha-petshop.web.app | https://console.firebase.google.com → patatinha-petshop |
+
+**Checklist Vercel (frontend):**
+- Repositório conectado ao GitHub: `flavio1133/patatinha-backend`
+- **Root Directory:** `web` (obrigatório: o app React está dentro da pasta `web`)
+- Variável de ambiente (opcional se já tiver `web/.env.production`): `VITE_API_URL` = `https://patatinha-petshop.onrender.com/api`
+- Deploy automático a cada `git push` em `main`
+
+---
+
 ## 1. Backend (API Node.js)
 
 ### Variáveis de ambiente (produção)

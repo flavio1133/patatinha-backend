@@ -28,7 +28,9 @@ const allowedOrigins = [
   'http://127.0.0.1:3008',
   'http://127.0.0.1:3009',
   'http://127.0.0.1:3000',
-  'https://patatinha-petshop.web.app',
+  // Frontends em produção
+  'https://patatinha-petshop.web.app',       // Firebase Hosting
+  'https://patatinha-petshop.vercel.app',    // Vercel
 ];
 
 app.use(cors({
