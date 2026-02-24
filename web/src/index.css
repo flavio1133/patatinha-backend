@@ -5,13 +5,52 @@
   box-sizing: border-box;
 }
 
+/* =======================================================================
+   Mini Design System – tokens globais
+   ======================================================================= */
+:root {
+  /* Cores base */
+  --color-bg-page: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f4f6;
+  --color-border-subtle: rgba(15, 23, 42, 0.06);
+
+  /* Tipografia */
+  --color-text-main: #0f172a;
+  --color-text-muted: #6b7280;
+  --color-text-inverse: #f9fafb;
+
+  /* Marcas (gestão = verde escuro, cliente = laranja escuro) */
+  --color-brand-gestao: #2e7d32;
+  --color-brand-gestao-soft: rgba(46, 125, 50, 0.12);
+
+  --color-brand-cliente: #c2410c;
+  --color-brand-cliente-soft: rgba(194, 65, 12, 0.12);
+
+  /* Feedback */
+  --color-danger: #dc2626;
+  --color-danger-soft: rgba(220, 38, 38, 0.12);
+
+  /* Raios / sombras */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg-page);
+  color: var(--color-text-main);
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 code {
@@ -22,3 +61,94 @@ code {
 #root {
   min-height: 100vh;
 }
+
+/* =======================================================================
+   Botões globais (UI)
+   ======================================================================= */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--color-text-main);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.08s ease;
+}
+
+.ui-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.ui-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primário (cliente - laranja) */
+.ui-btn-primary {
+  background: var(--color-brand-cliente);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-soft);
+}
+
+.ui-btn-primary:hover:not(:disabled) {
+  background: #9a3412;
+}
+
+/* Primário (gestão - verde) */
+.ui-btn-primary-gestao {
+  background: var(--color-brand-gestao);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-soft);
+}
+
+.ui-btn-primary-gestao:hover:not(:disabled) {
+  background: #1b5e20;
+}
+
+/* Secundário (borda suave) */
+.ui-btn-secondary {
+  background: rgba(15, 23, 42, 0.02);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-main);
+}
+
+.ui-btn-secondary:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* Ghost (sem borda visível) */
+.ui-btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.ui-btn-ghost:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+/* Perigo */
+.ui-btn-danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-soft);
+}
+
+.ui-btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+

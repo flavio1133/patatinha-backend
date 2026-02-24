@@ -31,6 +31,12 @@
   line-height: 1.4;
 }
 
+.cliente-dashboard-hint {
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #71717a;
+}
+
 .cliente-header {
   margin-bottom: 24px;
 }
@@ -125,15 +131,7 @@
 }
 
 .btn-ver-detalhes {
-  display: inline-block;
   margin-top: 12px;
-  padding: 8px 16px;
-  background: #c2410c;
-  color: white;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
 }
 
 .btn-ver-detalhes:hover {
@@ -147,13 +145,7 @@
 }
 
 .btn-agendar-now {
-  display: inline-block;
-  padding: 12px 24px;
-  background: #c2410c;
-  color: white;
-  border-radius: 12px;
-  font-weight: 600;
-  text-decoration: none;
+  margin-top: 8px;
 }
 
 .btn-agendar-now:hover {
@@ -323,6 +315,13 @@
   transform: scale(1.2);
 }
 
+.cliente-dashboard-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .btn-agendar {
   display: inline-block;
   background: linear-gradient(145deg, #c2410c 0%, #ea580c 100%);
@@ -384,6 +383,32 @@
 
 .cliente-dashboard-link:hover {
   color: #9a3412;
+}
+
+.upcoming-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.upcoming-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+
+.upcoming-item:last-child {
+  border-bottom: none;
+}
+
+.btn-cancelar-agendamento {
+  font-size: 0.85rem;
+  padding: 6px 12px;
 }
 
 @media (max-width: 500px) {

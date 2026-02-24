@@ -27,20 +27,7 @@
 }
 .agenda-availability-btn {
   flex-shrink: 0;
-  text-decoration: none;
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-weight: 600;
   white-space: nowrap;
-  background: #2e7d32;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.agenda-availability-btn:hover {
-  background: #388e3c;
-  color: #fff;
 }
 @media (max-width: 640px) {
   .agenda-availability-card {

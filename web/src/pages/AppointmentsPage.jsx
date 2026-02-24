@@ -166,8 +166,10 @@ function NewAppointmentModal({ onClose, onSuccess }) {
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Opcional" />
           </div>
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
+            <button type="button" className="ui-btn ui-btn-secondary" onClick={onClose}>
+              Cancelar
+            </button>
+            <button type="submit" className="ui-btn ui-btn-primary-gestao" disabled={createMutation.isPending}>
               {createMutation.isPending ? 'Criando...' : 'Criar agendamento'}
             </button>
           </div>
@@ -244,7 +246,7 @@ export default function AppointmentsPage() {
           <strong>📅 Disponibilidade da sua agenda</strong>
           <p>Defina os dias e horários em que você atende. Esses mesmos dias e horários serão exibidos para o cliente ao agendar.</p>
         </div>
-        <Link to="/gestao/configuracoes#disponibilidade" className="btn-primary agenda-availability-btn">
+        <Link to="/gestao/configuracoes#disponibilidade" className="ui-btn ui-btn-primary-gestao agenda-availability-btn">
           Configurar dias e horários
         </Link>
       </div>
@@ -279,7 +281,9 @@ export default function AppointmentsPage() {
             ))}
           </select>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>+ Novo agendamento</button>
+        <button type="button" className="ui-btn ui-btn-primary-gestao" onClick={() => setModalOpen(true)}>
+          + Novo agendamento
+        </button>
       </div>
 
       {isLoading && !data ? (
@@ -288,14 +292,18 @@ export default function AppointmentsPage() {
         <div className="agenda-error">
           <p><strong>Não foi possível carregar a agenda.</strong></p>
           <p>Verifique: (1) você está logado como empresa; (2) a conexão com a internet; (3) se o servidor da API está online (Render).</p>
-          <button type="button" className="btn-primary" onClick={() => refetch()}>Tentar novamente</button>
+          <button type="button" className="ui-btn ui-btn-primary-gestao" onClick={() => refetch()}>
+            Tentar novamente
+          </button>
         </div>
       ) : view === 'dia' ? (
         <div className="agenda-day">
           {list.length === 0 ? (
             <div className="agenda-empty">
               <p>Nenhum agendamento nesta data.</p>
-              <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>+ Novo agendamento</button>
+              <button type="button" className="ui-btn ui-btn-primary-gestao" onClick={() => setModalOpen(true)}>
+                + Novo agendamento
+              </button>
             </div>
           ) : (
           <div className="agenda-timeline">
@@ -370,7 +378,9 @@ export default function AppointmentsPage() {
           {list.length === 0 ? (
             <div className="agenda-empty">
               <p>Nenhum agendamento nesta data.</p>
-              <button type="button" className="btn-primary" onClick={() => setModalOpen(true)}>+ Novo agendamento</button>
+              <button type="button" className="ui-btn ui-btn-primary-gestao" onClick={() => setModalOpen(true)}>
+                + Novo agendamento
+              </button>
             </div>
           ) : (
           <>

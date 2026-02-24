@@ -138,7 +138,9 @@ export default function ClienteDashboardPage() {
         <section className="card proximo-agendamento empty">
           <h2>Próximo agendamento</h2>
           <p>Nenhum agendamento futuro</p>
-          <Link to="/cliente/agendar" className="btn-agendar-now">Agendar agora</Link>
+          <Link to="/cliente/agendar" className="ui-btn ui-btn-primary btn-agendar-now">
+            Agendar agora
+          </Link>
         </section>
       )}
 
@@ -153,14 +155,16 @@ export default function ClienteDashboardPage() {
             </div>
             <span className="agendamento-status">{nextAppointment.status}</span>
           </div>
-          <Link to="/cliente/agendamentos" className="btn-ver-detalhes">Ver detalhes</Link>
+          <Link to="/cliente/agendamentos" className="ui-btn ui-btn-primary btn-ver-detalhes">
+            Ver detalhes
+          </Link>
         </section>
       )}
 
       {todayAppointments.length > 0 && (
         <section className="card acompanhamento-tempo-real">
           <h2>Acompanhamento de hoje</h2>
-          <p className="cliente-sub" style={{ marginBottom: '12px', fontSize: '0.9rem', color: '#666' }}>
+          <p className="cliente-dashboard-hint">
             Acompanhe em tempo real: check-in, em andamento ou concluído.
           </p>
           <ul className="today-list">
@@ -179,18 +183,18 @@ export default function ClienteDashboardPage() {
       {upcomingAppointments.length > 0 && (
         <section className="card meus-agendamentos">
           <h2>📋 Meus agendamentos</h2>
-          <p className="cliente-sub" style={{ marginBottom: '12px', fontSize: '0.9rem', color: '#666' }}>
+          <p className="cliente-dashboard-hint">
             Você pode cancelar um agendamento abaixo.
           </p>
-          <ul className="historico-list" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          <ul className="historico-list upcoming-list">
             {upcomingAppointments.map((a) => (
-              <li key={a.id} className="historico-item" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', padding: '10px 0', borderBottom: '1px solid #eee' }}>
+              <li key={a.id} className="historico-item upcoming-item">
                 <span>
                   <strong>{a.petName}</strong> – {a.service} – {a.date} às {a.time}
                 </span>
                 <button
                   type="button"
-                  className="btn-cancelar-agendamento"
+                  className="ui-btn ui-btn-danger btn-cancelar-agendamento"
                   disabled={cancelandoId === a.id}
                   onClick={() => {
                     if (window.confirm('Deseja realmente cancelar este agendamento?')) {
@@ -198,7 +202,6 @@ export default function ClienteDashboardPage() {
                       cancelMutation.mutate(a.id);
                     }
                   }}
-                  style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', cursor: cancelandoId === a.id ? 'wait' : 'pointer' }}
                 >
                   {cancelandoId === a.id ? 'Cancelando...' : 'Cancelar'}
                 </button>
@@ -229,8 +232,8 @@ export default function ClienteDashboardPage() {
       </section>
 
       <section className="card historico">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h2 style={{ margin: 0 }}>📋 Últimos serviços</h2>
+        <div className="cliente-dashboard-section-header">
+          <h2>📋 Últimos serviços</h2>
           <Link to="/cliente/historico" className="cliente-dashboard-link">
             Ver histórico completo
           </Link>
@@ -249,8 +252,8 @@ export default function ClienteDashboardPage() {
 
       {gallery.length > 0 && (
         <section className="card galeria">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h2 style={{ margin: 0 }}>📷 Memórias recentes</h2>
+          <div className="cliente-dashboard-section-header">
+            <h2>📷 Memórias recentes</h2>
             <Link to="/cliente/galeria" className="cliente-dashboard-link">
               Ver galeria
             </Link>
