@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { appointmentsAPI, petsAPI } from '../services/api';
 import { useCompany } from '../contexts/CompanyContext';
@@ -28,23 +28,8 @@ export default function ClienteDashboardPage() {
   const { user } = useAuth();
   const { company } = useCompany();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const [galeriaIndex, setGaleriaIndex] = useState(0);
-  const [cancelandoId, setCancelandoId] = useState(null);
   const firstName = user?.name?.split(' ')[0] || 'Cliente';
-
-  const cancelMutation = useMutation({
-    mutationFn: (id) => appointmentsAPI.cancel(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cliente-appointments'] });
-      setCancelandoId(null);
-    },
-    onError: (err) => {
-      const msg = err.response?.data?.error || err.message || 'Erro ao cancelar';
-      alert(msg);
-      setCancelandoId(null);
-    },
-  });
 
   const { data: appointmentsData } = useQuery({
     queryKey: ['cliente-appointments'],
@@ -174,37 +159,6 @@ export default function ClienteDashboardPage() {
                 <span className="today-pet">{a.petName}</span>
                 <span className="today-service">{a.service}</span>
                 <span className="today-status">{a.statusLabel}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {upcomingAppointments.length > 0 && (
-        <section className="card meus-agendamentos">
-          <h2>📋 Meus agendamentos</h2>
-          <p className="cliente-dashboard-hint">
-            Você pode cancelar um agendamento abaixo.
-          </p>
-          <ul className="historico-list upcoming-list">
-            {upcomingAppointments.map((a) => (
-              <li key={a.id} className="historico-item upcoming-item">
-                <span>
-                  <strong>{a.petName}</strong> – {a.service} – {a.date} às {a.time}
-                </span>
-                <button
-                  type="button"
-                  className="ui-btn ui-btn-danger btn-cancelar-agendamento"
-                  disabled={cancelandoId === a.id}
-                  onClick={() => {
-                    if (window.confirm('Deseja realmente cancelar este agendamento?')) {
-                      setCancelandoId(a.id);
-                      cancelMutation.mutate(a.id);
-                    }
-                  }}
-                >
-                  {cancelandoId === a.id ? 'Cancelando...' : 'Cancelar'}
-                </button>
               </li>
             ))}
           </ul>
