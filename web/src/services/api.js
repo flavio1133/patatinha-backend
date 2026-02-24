@@ -178,14 +178,16 @@ export const authAPI = {
 };
 
 export const customersAPI = {
-  getAll: (search) =>
-    api.get('/customers', { params: { search } }),
+  getAll: (search, includeInactive) =>
+    api.get('/customers', { params: { search, includeInactive } }),
   getById: (id) =>
     api.get(`/customers/${id}`),
   create: (data) =>
     api.post('/customers', data),
   update: (id, data) =>
     api.put(`/customers/${id}`, data),
+  deactivate: (id, reason) =>
+    api.delete(`/customers/${id}`, { data: { reason } }),
 };
 
 export const appointmentsAPI = {
@@ -285,8 +287,8 @@ export const petsAPI = {
     api.post('/pets', data),
   update: (id, data) =>
     api.put(`/pets/${id}`, data),
-  delete: (id) =>
-    api.delete(`/pets/${id}`),
+  delete: (id, reason) =>
+    api.delete(`/pets/${id}`, { data: reason != null ? { reason } : {} }),
 };
 
 export const photosAPI = {
@@ -303,10 +305,20 @@ export const photosAPI = {
 };
 
 export const professionalsAPI = {
-  getAll: () =>
-    api.get('/professionals'),
+  getAll: (includeInactive) =>
+    api.get('/professionals', { params: includeInactive ? { includeInactive: true } : {} }),
   getById: (id) =>
     api.get(`/professionals/${id}`),
+  create: (data) =>
+    api.post('/professionals', data),
+  update: (id, data) =>
+    api.put(`/professionals/${id}`, data),
+  updatePermissions: (id, data) =>
+    api.put(`/professionals/${id}/permissions`, data),
+  createLogin: (id) =>
+    api.post(`/professionals/${id}/create-login`),
+  deactivate: (id, reason) =>
+    api.delete(`/professionals/${id}`, { data: { reason } }),
 };
 
 export const notificationsAPI = {
@@ -320,6 +332,18 @@ export const notificationsAPI = {
     api.delete(`/notifications/${id}`),
   registerToken: (token, platform, deviceId) =>
     api.post('/notifications/tokens', { token, platform, device_id: deviceId }),
+};
+
+export const auditLogsAPI = {
+  getLogs: (params) =>
+    api.get('/audit-logs', { params: { from: params?.from, to: params?.to, action: params?.action, entity: params?.entity } }),
+};
+
+export const cashflowAPI = {
+  getClosedPeriods: () =>
+    api.get('/cashflow/closed-periods/list'),
+  closePeriod: (month, year) =>
+    api.post('/cashflow/closed-periods', { month, year }),
 };
 
 export const clientsAPI = {

@@ -3,7 +3,9 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { requireRole } = require('../middleware/role.middleware');
 const { users } = require('./auth.routes');
+const { logAudit } = require('../services/audit.service');
 
 // TODO: Substituir por conexão com banco de dados
 // Estrutura de dados em memória para desenvolvimento
@@ -21,6 +23,8 @@ const demoCustomer = {
   notes: 'Cliente de demonstração para testes da plataforma.',
   photo: null,
   userId: 5, // userId do cliente@teste.com (seed-users) para ver agendamentos na área do cliente
+  is_active: true,
+  deleted_at: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -37,8 +41,13 @@ const validate = (req, res, next) => {
 
 // Listar todos os clientes (com busca e filtros)
 router.get('/', authenticateToken, (req, res) => {
-  const { search, phone } = req.query;
+  const { search, phone, includeInactive } = req.query;
   let filteredCustomers = [...customers];
+
+  // Por padrão ocultar inativos (soft delete); relatórios podem usar includeInactive=true
+  if (!includeInactive) {
+    filteredCustomers = filteredCustomers.filter(c => c.is_active !== false);
+  }
 
   // Busca por nome ou telefone
   if (search) {
@@ -130,6 +139,8 @@ router.post('/', [
     notes: notes || null,
     userId,
     photo: null,
+    is_active: true,
+    deleted_at: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -177,25 +188,51 @@ router.put('/:id', [
   });
 });
 
-// Deletar cliente
-router.delete('/:id', authenticateToken, (req, res) => {
+// Desativar cliente (soft delete) – apenas Gestor ou Super Admin; motivo obrigatório
+router.delete('/:id', [
+  authenticateToken,
+  requireRole('master', 'manager', 'super_admin'),
+  body('reason').trim().notEmpty().withMessage('Motivo da desativação é obrigatório'),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const customerIndex = customers.findIndex(c => c.id === parseInt(req.params.id));
 
   if (customerIndex === -1) {
     return res.status(404).json({ error: 'Cliente não encontrado' });
   }
 
-  // Verificar se cliente tem pets cadastrados
-  const pets = require('./pets.routes').getPetsByCustomerId(parseInt(req.params.id));
-  if (pets.length > 0) {
-    return res.status(400).json({ 
-      error: 'Não é possível deletar cliente com pets cadastrados',
-      petsCount: pets.length 
-    });
+  const customer = customers[customerIndex];
+  if (customer.is_active === false) {
+    return res.status(400).json({ error: 'Cliente já está desativado' });
   }
 
-  customers.splice(customerIndex, 1);
-  res.json({ message: 'Cliente removido com sucesso' });
+  const reason = req.body.reason.trim();
+
+  const oldSnapshot = { ...customer };
+  customers[customerIndex].is_active = false;
+  customers[customerIndex].deleted_at = new Date();
+  customers[customerIndex].updatedAt = new Date();
+
+  logAudit({
+    userId: req.user.userId || req.user.id,
+    userName: req.user.name || req.user.email || 'Usuário',
+    userRole: req.user.role || 'unknown',
+    action: 'deactivate',
+    entity: 'customer',
+    entityId: customer.id,
+    oldValue: oldSnapshot,
+    newValue: { ...customers[customerIndex] },
+    reason,
+  });
+
+  res.json({
+    message: 'Cliente desativado com sucesso. O histórico de serviços e agendamentos foi preservado.',
+    customer: customers[customerIndex],
+  });
 });
 
 // Exportar função auxiliar para buscar clientes

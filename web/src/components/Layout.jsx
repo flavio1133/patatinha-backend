@@ -10,12 +10,14 @@ const ROLE_LABEL = { master: 'Administrador', manager: 'Gerente', employee: 'Fun
 const PAGE_TITLES = {
   '/gestao/dashboard': 'Dashboard',
   '/gestao/appointments': 'Agenda',
+  '/gestao/profissionais': 'Profissionais',
   '/gestao/customers': 'Clientes',
   '/gestao/pets': 'Pets',
   '/gestao/inventory': 'Estoque',
   '/gestao/pdv': 'PDV',
   '/gestao/finance': 'Financeiro',
   '/gestao/relatorios': 'Relatórios',
+  '/gestao/auditoria': 'Logs de Auditoria',
   '/gestao/codigos': 'Códigos de acesso',
   '/gestao/configuracoes': 'Configurações',
 };
@@ -72,12 +74,14 @@ export default function Layout({ isCompanyMode }) {
   const menuItems = [
     { path: '/gestao/dashboard', label: 'Dashboard', icon: '🏠' },
     { path: '/gestao/appointments', label: 'Agenda', icon: '📅' },
+    { path: '/gestao/profissionais', label: 'Profissionais', icon: '👤' },
     { path: '/gestao/customers', label: 'Clientes', icon: '👥' },
     { path: '/gestao/pets', label: 'Pets', icon: '🐶' },
     { path: '/gestao/inventory', label: 'Estoque', icon: '📦' },
     { path: '/gestao/pdv', label: 'PDV', icon: '💰' },
     { path: '/gestao/finance', label: 'Financeiro', icon: '📊' },
     { path: '/gestao/relatorios', label: 'Relatórios', icon: '📈' },
+    { path: '/gestao/auditoria', label: 'Auditoria', icon: '📋' },
     { path: '/gestao/codigos', label: 'Códigos de acesso', icon: '🎫' },
     { path: '/gestao/configuracoes', label: 'Configurações', icon: '⚙️' },
   ];

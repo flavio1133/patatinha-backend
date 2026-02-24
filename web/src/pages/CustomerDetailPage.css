@@ -47,3 +47,7 @@
 .customer-appointments-list .apt-status { font-size: 12px; padding: 4px 10px; border-radius: 6px; }
 .customer-appointments-list li.status-completed .apt-status { background: rgba(46, 125, 50, 0.25); color: #a5d6a7; }
 .customer-appointments-list li.status-cancelled .apt-status { background: rgba(229, 57, 53, 0.25); color: #ef9a9a; }
+
+.modal-deactivate-desc { margin: 0 0 16px 0; color: #a0a0a0; font-size: 0.9rem; }
+.customer-detail .btn-desativar { color: #94a3b8; }
+.customer-detail .btn-desativar:hover { color: #f87171; }

@@ -35,7 +35,9 @@ const AdminPetsPage = lazy(() => import('./pages/AdminPetsPage'));
 const AdminPetDetailPage = lazy(() => import('./pages/AdminPetDetailPage'));
 const PDVPage = lazy(() => import('./pages/PDVPage'));
 const RelatoriosPage = lazy(() => import('./pages/RelatoriosPage'));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
 const ConfiguracoesPage = lazy(() => import('./pages/ConfiguracoesPage'));
+const ProfissionaisPage = lazy(() => import('./pages/ProfissionaisPage'));
 const ClienteDashboardPage = lazy(() => import('./pages/ClienteDashboardPage'));
 const ClientBookingFlow = lazy(() => import('./pages/ClientBookingFlow'));
 const ClientAppointmentsPage = lazy(() => import('./pages/ClientAppointmentsPage'));
@@ -163,12 +165,14 @@ function App() {
           <Route path="customers" element={<CustomersPage />} />
           <Route path="customers/:id" element={<CustomerDetailPage />} />
           <Route path="appointments" element={<AppointmentsPage />} />
+          <Route path="profissionais" element={<ProfissionaisPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="pets" element={<AdminPetsPage />} />
           <Route path="pets/:id" element={<AdminPetDetailPage />} />
           <Route path="pdv" element={<PDVPage />} />
           <Route path="finance" element={<FinancePage />} />
           <Route path="relatorios" element={<RelatoriosPage />} />
+          <Route path="auditoria" element={<AuditLogsPage />} />
           <Route path="codigos" element={<CompanyInvitationCodesPage />} />
           <Route path="configuracoes" element={<ConfiguracoesPage />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />

@@ -8,6 +8,17 @@ import './ClienteLayout.css';
 
 const APP_VERSION = '1.0.0';
 
+const PAGE_TITLES = {
+  '/cliente/home': 'Início',
+  '/cliente/agendar': 'Agendar',
+  '/cliente/agendamentos': 'Agendamentos',
+  '/cliente/pets': 'Pets',
+  '/cliente/historico': 'Histórico',
+  '/cliente/galeria': 'Galeria',
+  '/cliente/perfil': 'Perfil',
+  '/cliente/notificacoes': 'Notificações',
+};
+
 function getInitials(name) {
   if (!name || typeof name !== 'string') return '?';
   const parts = name.trim().split(/\s+/);
@@ -15,6 +26,14 @@ function getInitials(name) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
   return (name[0] || '?').toUpperCase();
+}
+
+function getPageTitle(pathname) {
+  if (pathname === '/cliente' || pathname === '/cliente/') return 'Início';
+  for (const [path, title] of Object.entries(PAGE_TITLES)) {
+    if (pathname === path || pathname.startsWith(path + '/')) return title;
+  }
+  return 'Início';
 }
 
 export default function ClienteLayout({ children }) {
@@ -25,10 +44,12 @@ export default function ClienteLayout({ children }) {
   const { unreadCount } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const firstName = user?.name?.split(' ')[0] || 'Cliente';
   const initials = getInitials(user?.name);
+  const currentTitle = getPageTitle(location.pathname);
 
   const logoUrl = company?.logo_url
     ? (company.logo_url.startsWith('http') ? company.logo_url : `${window.location.origin}${company.logo_url}`)
@@ -41,27 +62,36 @@ export default function ClienteLayout({ children }) {
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   const isActive = (path) => {
-    if (path === '/cliente/home') return location.pathname === path;
-    if (path === '/cliente/agendamentos') return location.pathname === path;
-    if (path === '/cliente/agendar') return location.pathname === path;
+    if (path === '/cliente/home') return location.pathname === '/cliente/home' || location.pathname === '/cliente';
     return location.pathname.startsWith(path);
   };
 
-  const navItems = [
-    { to: '/cliente/home', label: 'Home', icon: '⌂' },
-    { to: '/cliente/pets', label: 'Pets', icon: '🐾' },
+  const menuItems = [
+    { to: '/cliente/home', label: 'Início', icon: '🏠' },
     { to: '/cliente/agendamentos', label: 'Agendamentos', icon: '📅' },
     { to: '/cliente/historico', label: 'Histórico', icon: '📋' },
+    { to: '/cliente/galeria', label: 'Fotos', icon: '📷' },
     { to: '/cliente/perfil', label: 'Perfil', icon: '👤' },
+  ];
+
+  // Barra inferior (mobile) - 5 itens para cliente
+  const bottomItems = [
+    { path: '/cliente/home', label: 'Home', icon: '🏠' },
+    { path: '/cliente/pets', label: 'Pets', icon: '🐾' },
+    { path: '/cliente/agendamentos', label: 'Agendamentos', icon: '📅' },
+    { path: '/cliente/historico', label: 'Histórico', icon: '📋' },
+    { path: '/cliente/perfil', label: 'Perfil', icon: '👤' },
   ];
 
   const whatsappNum = (() => {
@@ -69,80 +99,51 @@ export default function ClienteLayout({ children }) {
     return raw && (raw.startsWith('55') ? raw : '55' + raw);
   })();
 
-  const sidebarItems = [
-    { to: '/cliente/home', label: 'Dashboard', icon: '⌂' },
-    { to: '/cliente/pets', label: 'Meus Pets', icon: '🐾' },
-    { to: '/cliente/agendamentos', label: 'Agendamentos', icon: '📅' },
-    { to: '/cliente/historico', label: 'Histórico', icon: '📋' },
-    { to: '/cliente/galeria', label: 'Fotos', icon: '📷' },
-    { to: '/cliente/perfil', label: 'Perfil', icon: '👤' },
-  ];
-
   return (
     <div className="cliente-layout">
-      {/* Header - mobile & desktop */}
-      <header className="cliente-layout-header">
-        <div className="cliente-header-left">
-          <Link to="/cliente/home" className="cliente-logo-link">
-            {logoUrl ? (
-              <img src={logoUrl} alt={company?.name || 'Pet Shop'} className="cliente-logo-img" />
-            ) : (
-              <span className="cliente-logo-text">{company?.name || 'Patatinha'}</span>
-            )}
-          </Link>
+      {/* Top bar - mesmo estilo da gestão (tema escuro) */}
+      <header className="cliente-top-bar">
+        <div className="cliente-top-bar-left">
+          <button
+            type="button"
+            className="cliente-icon-btn cliente-menu-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Menu"
+          >
+            ☰
+          </button>
+          <h2 className="cliente-top-bar-title">{currentTitle}</h2>
         </div>
-
-        <div className="cliente-header-center">
-          <span className="cliente-greeting desktop-only">Olá, {firstName}</span>
-          <div className={'cliente-search-wrap' + (searchExpanded ? ' expanded' : '')}>
-            <ClientSearch
-              expanded={searchExpanded}
-              onExpand={() => setSearchExpanded(true)}
-              onCollapse={() => setSearchExpanded(false)}
-            />
-            {!searchExpanded && (
-              <button
-                type="button"
-                className="cliente-search-toggle mobile-only"
-                onClick={() => setSearchExpanded(true)}
-                aria-label="Abrir busca"
-              >
-                🔍
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="cliente-header-right">
-          {searchExpanded && (
-            <button
-              type="button"
-              className="cliente-search-close mobile-only"
-              onClick={() => setSearchExpanded(false)}
-              aria-label="Fechar busca"
-            >
-              ✕
-            </button>
-          )}
-          <Link to="/cliente/notificacoes" className="cliente-btn-notif" aria-label="Notificações">
+        <div className="cliente-top-bar-actions">
+          <button
+            type="button"
+            className="cliente-icon-btn"
+            onClick={() => setSearchExpanded(!searchExpanded)}
+            aria-label="Buscar"
+          >
+            🔍
+          </button>
+          <Link to="/cliente/notificacoes" className="cliente-icon-btn cliente-btn-notif" aria-label="Notificações">
             <span className="cliente-notif-icon">🔔</span>
             {unreadCount > 0 && (
               <span className="cliente-notif-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
             )}
           </Link>
-
           <div className="cliente-avatar-dropdown" ref={dropdownRef}>
             <button
               type="button"
               className="cliente-avatar-btn"
               onClick={() => setDropdownOpen(!dropdownOpen)}
               aria-expanded={dropdownOpen}
-              aria-haspopup="true"
             >
               <span className="cliente-avatar-initials">{initials}</span>
             </button>
             {dropdownOpen && (
               <div className="cliente-dropdown-menu">
+                <div className="cliente-dropdown-user">
+                  <strong>{user?.name || 'Cliente'}</strong>
+                  <span>{company?.name || 'Pet Shop'}</span>
+                </div>
                 <Link to="/cliente/perfil" className="cliente-dropdown-item" onClick={() => setDropdownOpen(false)}>
                   Perfil
                 </Link>
@@ -158,74 +159,77 @@ export default function ClienteLayout({ children }) {
         </div>
       </header>
 
-      <div className="cliente-layout-body">
-        {/* Sidebar - desktop only */}
-        <aside className="cliente-sidebar desktop-only">
-          <Link to="/cliente/home" className="cliente-sidebar-logo">
-            {logoUrl ? (
-              <img src={logoUrl} alt="" />
-            ) : (
-              <span>{company?.name || 'Patatinha'}</span>
+      {/* Busca expandida */}
+      {searchExpanded && (
+        <div className="cliente-search-overlay">
+          <ClientSearch
+            expanded
+            onCollapse={() => setSearchExpanded(false)}
+          />
+          <button type="button" className="cliente-search-close" onClick={() => setSearchExpanded(false)} aria-label="Fechar">✕</button>
+        </div>
+      )}
+
+      {/* Drawer menu (mobile) */}
+      {menuOpen && (
+        <>
+          <div className="cliente-drawer-overlay" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+          <aside className="cliente-drawer">
+            <div className="cliente-drawer-header">
+              {logoUrl ? (
+                <img src={logoUrl} alt="" className="cliente-drawer-logo" />
+              ) : (
+                <span className="cliente-drawer-name">{company?.name || 'Patatinha'}</span>
+              )}
+              <button type="button" className="cliente-drawer-close" onClick={() => setMenuOpen(false)} aria-label="Fechar">✕</button>
+            </div>
+            <nav className="cliente-drawer-nav">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={'cliente-drawer-link' + (isActive(item.to) ? ' active' : '')}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="cliente-drawer-icon">{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <Link to="/cliente/agendar" className="cliente-drawer-agendar" onClick={() => setMenuOpen(false)}>
+              Agendar serviço
+            </Link>
+            <Link to="/cliente/codigo" className="cliente-drawer-vincular" onClick={() => setMenuOpen(false)}>
+              Vincular pet shop
+            </Link>
+            {whatsappNum && (
+              <a href={`https://wa.me/${whatsappNum}`} target="_blank" rel="noopener noreferrer" className="cliente-drawer-whatsapp">
+                Contato WhatsApp
+              </a>
             )}
-          </Link>
-          <nav className="cliente-sidebar-nav">
-            {sidebarItems.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={'cliente-sidebar-link' + (isActive(item.to) ? ' active' : '')}
-              >
-                <span className="cliente-sidebar-icon">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <Link
-            to="/cliente/agendar"
-            className={'cliente-sidebar-agendar' + (isActive('/cliente/agendar') ? ' active' : '')}
-          >
-            Agendar
-          </Link>
-          <Link to="/cliente/codigo" className="cliente-sidebar-vincular">
-            Vincular pet shop
-          </Link>
-        </aside>
+          </aside>
+        </>
+      )}
 
-        {/* Main content */}
-        <main className="cliente-layout-main">
-          {children}
-        </main>
-      </div>
+      {/* Conteúdo principal - fundo escuro como gestão */}
+      <main className="cliente-layout-main">
+        {children}
+      </main>
 
-      {/* Bottom nav - mobile only */}
-      <nav className="cliente-bottom-nav mobile-only">
-        {navItems.map((item) => (
+      {/* Bottom nav - barra fixa inferior (apenas cliente no mobile) */}
+      <nav className="cliente-bottom-bar" aria-label="Navegação principal do cliente">
+        {bottomItems.map((item) => (
           <Link
-            key={item.to}
-            to={item.to}
-            className={'cliente-bottom-link' + (isActive(item.to) ? ' active' : '')}
+            key={item.path}
+            to={item.path}
+            className={'cliente-bottom-link' + (isActive(item.path) ? ' active' : '')}
+            aria-current={isActive(item.path) ? 'page' : undefined}
           >
             <span className="cliente-bottom-icon">{item.icon}</span>
             <span className="cliente-bottom-label">{item.label}</span>
           </Link>
         ))}
       </nav>
-
-      {/* Footer */}
-      <footer className="cliente-layout-footer">
-        {whatsappNum && (
-          <a
-            href={`https://wa.me/${whatsappNum}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cliente-footer-whatsapp"
-          >
-            Contato WhatsApp
-          </a>
-        )}
-        <Link to="/termos" className="cliente-footer-terms">Termos de uso</Link>
-        <span className="cliente-footer-version">v{APP_VERSION}</span>
-      </footer>
     </div>
   );
 }

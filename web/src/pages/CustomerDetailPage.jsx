@@ -15,6 +15,8 @@ export default function CustomerDetailPage() {
   const [activeTab, setActiveTab] = useState('info');
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' });
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState('');
 
   const { data: customerData, isLoading: loadingCustomer } = useQuery({
     queryKey: ['customer', id],
@@ -47,6 +49,20 @@ export default function CustomerDetailPage() {
     onError: (err) => {
       // eslint-disable-next-line no-alert
       alert(err.response?.data?.error || err.message || 'Erro ao atualizar cliente.');
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: () => customersAPI.deactivate(customer.id, deactivateReason.trim()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setDeactivateOpen(false);
+      setDeactivateReason('');
+      navigate('/gestao/customers');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Não foi possível desativar. Apenas Gestor ou Super Admin pode desativar.');
     },
   });
 
@@ -113,6 +129,15 @@ export default function CustomerDetailPage() {
             >
               Agendar serviço
             </button>
+            {customer.is_active !== false && (
+              <button
+                type="button"
+                className="ui-btn ui-btn-ghost btn-desativar"
+                onClick={() => setDeactivateOpen(true)}
+              >
+                Desativar cliente
+              </button>
+            )}
             <a
               href={whatsappUrl}
               target="_blank"
@@ -266,6 +291,51 @@ export default function CustomerDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deactivateOpen && (
+        <div className="modal-overlay" onClick={() => !deactivateMutation.isPending && setDeactivateOpen(false)}>
+          <div className="modal-content modal-deactivate" onClick={(e) => e.stopPropagation()}>
+            <h3>Desativar cliente</h3>
+            <p className="modal-deactivate-desc">
+              O cliente será desativado e não aparecerá nas listas ativas. O histórico de serviços e agendamentos será preservado. Apenas Gestor ou Super Administrador pode realizar esta ação.
+            </p>
+            <div className="form-group">
+              <label>Motivo da desativação *</label>
+              <textarea
+                value={deactivateReason}
+                onChange={(e) => setDeactivateReason(e.target.value)}
+                placeholder="Ex.: Erro de cadastro, solicitação do cliente, descarte..."
+                rows={3}
+                required
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => setDeactivateOpen(false)}
+                disabled={deactivateMutation.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={() => {
+                  if (!deactivateReason.trim()) {
+                    alert('Informe o motivo da desativação.');
+                    return;
+                  }
+                  deactivateMutation.mutate();
+                }}
+                disabled={deactivateMutation.isPending || !deactivateReason.trim()}
+              >
+                {deactivateMutation.isPending ? 'Desativando...' : 'Desativar'}
+              </button>
+            </div>
           </div>
         </div>
       )}

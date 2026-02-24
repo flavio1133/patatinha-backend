@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { requireRole } = require('../middleware/role.middleware');
 const { canAddPet, validatePetRequiredFields } = require('../services/business-rules.service');
+const { logAudit } = require('../services/audit.service');
 
 // TODO: Implementar conexão com banco de dados
 // Por enquanto, usando dados em memória
@@ -13,7 +15,7 @@ const petsState = { petIdCounter: 1 };
 // e também vinculado ao customer id 1 criado em customers.routes.js
 const demoPetKiara = {
   id: petsState.petIdCounter++,
-  userId: 5, // userId do cliente@teste.com nos seeds de auth
+  userId: 5,
   customerId: 1,
   name: 'Kiara',
   breed: 'Golden Retriever',
@@ -34,6 +36,8 @@ const demoPetKiara = {
     finishing: ['Laço rosa', 'Perfume suave'],
     notes: 'Gosta de água morna e carinho na cabeça.',
   },
+  is_active: true,
+  deleted_at: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -50,24 +54,29 @@ const validate = (req, res, next) => {
 
 // Listar pets (do usuário ou de um cliente específico)
 router.get('/', authenticateToken, (req, res) => {
-  const { customerId } = req.query;
+  const { customerId, includeInactive } = req.query;
   
   let filteredPets = pets;
+
+  // Por padrão ocultar inativos (soft delete)
+  if (!includeInactive) {
+    filteredPets = filteredPets.filter(p => p.is_active !== false);
+  }
   
   // Se for cliente do app mobile, filtrar por userId
   if (req.user.userId && !customerId) {
-    filteredPets = pets.filter(p => p.userId === req.user.userId);
+    filteredPets = filteredPets.filter(p => p.userId === req.user.userId);
   }
   
   // Se for busca por cliente (admin)
   if (customerId) {
-    filteredPets = pets.filter(p => p.customerId === parseInt(customerId));
+    filteredPets = filteredPets.filter(p => p.customerId === parseInt(customerId));
   }
   
   res.json({ pets: filteredPets });
 });
 
-// Função auxiliar para buscar pets por customerId
+// Função auxiliar para buscar pets por customerId (inclui inativos para integridade)
 function getPetsByCustomerId(customerId) {
   return pets.filter(p => p.customerId === customerId);
 }
@@ -141,6 +150,8 @@ router.post('/', [
       finishing: [],
       notes: null,
     },
+    is_active: true,
+    deleted_at: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -220,23 +231,55 @@ router.put('/:id', authenticateToken, (req, res) => {
   res.json({ message: 'Pet atualizado com sucesso', pet: pets[petIndex] });
 });
 
-// Deletar pet
-router.delete('/:id', authenticateToken, (req, res) => {
+// Desativar pet (soft delete) – apenas Gestor ou Super Admin; motivo obrigatório
+router.delete('/:id', [
+  authenticateToken,
+  requireRole('master', 'manager', 'super_admin'),
+  body('reason').trim().notEmpty().withMessage('Motivo da desativação é obrigatório'),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const pet = pets.find(p => p.id === parseInt(req.params.id));
   
   if (!pet) {
     return res.status(404).json({ error: 'Pet não encontrado' });
   }
 
-  // Verificar permissão
-  if (pet.userId && pet.userId !== req.user.userId) {
+  if (pet.userId && pet.userId !== req.user.userId && !['master', 'manager', 'super_admin'].includes(req.user.role)) {
     return res.status(403).json({ error: 'Acesso negado' });
   }
 
+  if (pet.is_active === false) {
+    return res.status(400).json({ error: 'Pet já está desativado' });
+  }
+
+  const reason = req.body.reason.trim();
   const petIndex = pets.findIndex(p => p.id === parseInt(req.params.id));
-  pets.splice(petIndex, 1);
-  
-  res.json({ message: 'Pet removido com sucesso' });
+  const oldSnapshot = { ...pet };
+
+  pets[petIndex].is_active = false;
+  pets[petIndex].deleted_at = new Date();
+  pets[petIndex].updatedAt = new Date();
+
+  logAudit({
+    userId: req.user.userId || req.user.id,
+    userName: req.user.name || req.user.email || 'Usuário',
+    userRole: req.user.role || 'unknown',
+    action: 'deactivate',
+    entity: 'pet',
+    entityId: pet.id,
+    oldValue: oldSnapshot,
+    newValue: { ...pets[petIndex] },
+    reason,
+  });
+
+  res.json({
+    message: 'Pet desativado com sucesso. O histórico de serviços foi preservado.',
+    pet: pets[petIndex],
+  });
 });
 
 module.exports = router;

@@ -1,0 +1,22 @@
+.profissionais-page {
+  width: 100%;
+}
+
+.profissionais-page h1 {
+  font-size: 1.35rem;
+  margin-bottom: 24px;
+  color: #f0f0f0;
+  font-weight: 600;
+}
+
+.profissionais-page .staff-section {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.profissionais-page .config-desc {
+  margin-bottom: 20px;
+}

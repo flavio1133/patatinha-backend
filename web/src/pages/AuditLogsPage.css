@@ -1,0 +1,119 @@
+.audit-logs-page {
+  width: 100%;
+}
+
+.audit-logs-page h1 {
+  font-size: 1.35rem;
+  margin-bottom: 8px;
+  color: #f0f0f0;
+  font-weight: 600;
+}
+
+.audit-desc {
+  margin-bottom: 24px;
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.audit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-filters .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audit-filters label {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.audit-filters input,
+.audit-filters select {
+  padding: 8px 12px;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  background: #252525;
+  color: #e4e4e4;
+  font-size: 14px;
+  min-width: 140px;
+}
+
+.audit-error {
+  padding: 16px;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 10px;
+  color: #f8d7da;
+  margin-bottom: 16px;
+}
+
+.audit-loading,
+.audit-empty {
+  color: #9ca3af;
+  padding: 24px;
+  text-align: center;
+}
+
+.audit-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.audit-table th,
+.audit-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.audit-table th {
+  background: rgba(0, 0, 0, 0.2);
+  color: #e4e4e4;
+  font-weight: 600;
+}
+
+.audit-table td {
+  color: #d1d5db;
+}
+
+.audit-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.audit-reason {
+  max-width: 280px;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .audit-filters {
+    flex-direction: column;
+  }
+  .audit-filters input,
+  .audit-filters select {
+    min-width: 100%;
+  }
+  .audit-table th,
+  .audit-table td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+}

@@ -100,6 +100,7 @@ app.use('/api/subscriptions', require('./routes/subscriptions.routes'));
 app.use('/api/company-subscription', require('./routes/company-subscription.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/reports', require('./routes/reports.routes'));
+app.use('/api/audit-logs', require('./routes/audit.routes'));
 app.use('/api/products', require('./routes/products.routes'));
 app.use('/api/notifications', require('./routes/notifications.routes'));
 

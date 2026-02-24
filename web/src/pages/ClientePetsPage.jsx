@@ -13,9 +13,17 @@ export default function ClientePetsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => petsAPI.delete(id),
+    mutationFn: ({ id, reason }) => petsAPI.delete(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cliente-pets'] });
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.error || err.message;
+      if (err.response?.status === 403) {
+        alert('Apenas o gestor da pet shop pode desativar um pet. Entre em contato com a loja.');
+      } else {
+        alert(msg || 'Não foi possível desativar.');
+      }
     },
   });
 
@@ -65,13 +73,16 @@ export default function ClientePetsPage() {
                   type="button"
                   className="btn-delete-pet"
                   onClick={() => {
-                    if (window.confirm(`Remover ${pet.name}?`)) {
-                      deleteMutation.mutate(pet.id);
+                    const reason = window.prompt('Motivo da desativação (obrigatório):');
+                    if (reason != null && reason.trim()) {
+                      deleteMutation.mutate({ id: pet.id, reason: reason.trim() });
+                    } else if (reason !== null) {
+                      alert('Informe o motivo para desativar.');
                     }
                   }}
                   disabled={deleteMutation.isPending}
                 >
-                  Excluir
+                  Desativar
                 </button>
               </div>
             </div>

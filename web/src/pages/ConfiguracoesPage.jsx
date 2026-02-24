@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companiesAPI } from '../services/api';
+import ProfissionaisSection from '../components/ProfissionaisSection';
 import './ConfiguracoesPage.css';
 
 const DIAS = [
@@ -183,10 +184,12 @@ export default function ConfiguracoesPage() {
           </section>
         )}
         {aba === 'profissionais' && (
-          <section>
-            <h2>Profissionais</h2>
-            <p>Funcionários, especialidades, dias de trabalho e comissões.</p>
-          </section>
+          <>
+            <section className="config-section">
+              <h2>Profissionais</h2>
+              <ProfissionaisSection />
+            </section>
+          </>
         )}
         {aba === 'usuarios' && (
           <section>

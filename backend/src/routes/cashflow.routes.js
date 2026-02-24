@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { requireRole } = require('../middleware/role.middleware');
+const { isDateInClosedPeriod, closePeriod, getClosedPeriods } = require('../services/closed-periods.service');
 
 // TODO: Implementar conexão com banco de dados
 const transactions = [];
@@ -42,6 +44,32 @@ router.get('/', authenticateToken, (req, res) => {
   filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   res.json({ transactions: filteredTransactions });
+});
+
+// Períodos fechados (definir antes de /:id para não conflitar)
+router.get('/closed-periods/list', authenticateToken, requireRole('master', 'manager', 'super_admin'), (req, res) => {
+  res.json({ closedPeriods: getClosedPeriods() });
+});
+
+router.post('/closed-periods', [
+  authenticateToken,
+  requireRole('master', 'manager', 'super_admin'),
+  body('month').isInt({ min: 1, max: 12 }).withMessage('Mês inválido (1-12)'),
+  body('year').isInt({ min: 2020, max: 2100 }).withMessage('Ano inválido'),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  const { month, year } = req.body;
+  const added = closePeriod(month, year);
+  if (!added) {
+    return res.status(400).json({ error: 'Este período já está fechado' });
+  }
+  res.status(201).json({
+    message: `Período ${month}/${year} fechado. Movimentações deste mês não poderão mais ser alteradas nem excluídas.`,
+    closedPeriods: getClosedPeriods(),
+  });
 });
 
 // Obter transação específica
@@ -99,12 +127,20 @@ router.post('/', [
   });
 });
 
-// Atualizar transação
+// Atualizar transação (bloqueado se período estiver fechado)
 router.put('/:id', authenticateToken, (req, res) => {
   const transactionIndex = transactions.findIndex(t => t.id === parseInt(req.params.id));
 
   if (transactionIndex === -1) {
     return res.status(404).json({ error: 'Transação não encontrada' });
+  }
+
+  const transaction = transactions[transactionIndex];
+  if (isDateInClosedPeriod(transaction.date)) {
+    return res.status(403).json({
+      error: 'Não é permitido editar movimentações de períodos já fechados. O saldo histórico é imutável.',
+      closedPeriod: true,
+    });
   }
 
   transactions[transactionIndex] = {
@@ -119,12 +155,20 @@ router.put('/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Deletar transação
+// Deletar transação (bloqueado se período estiver fechado)
 router.delete('/:id', authenticateToken, (req, res) => {
   const transactionIndex = transactions.findIndex(t => t.id === parseInt(req.params.id));
 
   if (transactionIndex === -1) {
     return res.status(404).json({ error: 'Transação não encontrada' });
+  }
+
+  const transaction = transactions[transactionIndex];
+  if (isDateInClosedPeriod(transaction.date)) {
+    return res.status(403).json({
+      error: 'Não é permitido excluir movimentações de períodos já fechados. O saldo histórico é imutável.',
+      closedPeriod: true,
+    });
   }
 
   transactions.splice(transactionIndex, 1);
@@ -324,4 +368,5 @@ router.post('/reconcile', authenticateToken, (req, res) => {
 });
 
 module.exports = router;
+module.exports.transactions = transactions;
 module.exports.transactions = transactions;
