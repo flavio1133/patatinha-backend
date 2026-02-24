@@ -18,7 +18,7 @@ const validate = (req, res, next) => {
 };
 
 // Listar transações (com filtros)
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, require('../middleware/subscription.middleware').checkSubscription, (req, res) => {
   const { startDate, endDate, type, category } = req.query;
   let filteredTransactions = [...transactions];
 

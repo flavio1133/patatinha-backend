@@ -17,7 +17,7 @@ const validate = (req, res, next) => {
 };
 
 // Listar produtos (com filtros)
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, require('../middleware/subscription.middleware').checkSubscription, (req, res) => {
   const { search, category, lowStock } = req.query;
   let filteredProducts = [...products];
 
@@ -50,7 +50,7 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // Obter produto específico
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, require('../middleware/subscription.middleware').checkSubscription, (req, res) => {
   const product = products.find(p => p.id === parseInt(req.params.id));
 
   if (!product) {

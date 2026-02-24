@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useAdmin } from '../contexts/AdminContext';
 import NotificationsCenter from './Notifications/NotificationsCenter';
 import { companiesAPI } from '../services/api';
 import './Layout.css';
 
-const ROLE_LABEL = { master: 'Administrador', manager: 'Gerente', employee: 'Funcionário', financial: 'Financeiro', customer: 'Cliente', owner: 'Dono / Gestor' };
+const ROLE_LABEL = { super_admin: 'Super Admin', master: 'Administrador', manager: 'Gerente', employee: 'Funcionário', financial: 'Financeiro', customer: 'Cliente', owner: 'Dono / Gestor' };
 
 const PAGE_TITLES = {
   '/gestao/dashboard': 'Dashboard',
@@ -22,21 +23,88 @@ const PAGE_TITLES = {
   '/gestao/configuracoes': 'Configurações',
 };
 
-export default function Layout({ isCompanyMode }) {
+const MASTER_PAGE_TITLES = {
+  '/gestao/master': 'Dashboard Global',
+  '/gestao/lojas': 'Lojas / Clientes',
+  '/gestao/assinaturas-master': 'Assinaturas e Financeiro',
+  '/gestao/feature-toggle': 'Feature Toggle',
+  '/gestao/tickets': 'Tickets / Sugestões',
+  '/gestao/equipe-master': 'Equipe Master',
+   '/gestao/gestores': 'Gestores da Conta',
+  '/gestao/auditoria': 'Auditoria Master',
+};
+
+const MASTER_MENU_ITEMS = [
+  { path: '/gestao/master', label: 'Dashboard Global', icon: '🌐' },
+  { path: '/gestao/lojas', label: 'Lojas / Clientes', icon: '🏪' },
+  { path: '/gestao/assinaturas-master', label: 'Assinaturas e Financeiro', icon: '💳' },
+  { path: '/gestao/feature-toggle', label: 'Feature Toggle', icon: '🔧' },
+  { path: '/gestao/tickets', label: 'Tickets / Sugestões', icon: '🎫' },
+  { path: '/gestao/equipe-master', label: 'Equipe Master', icon: '👥' },
+   { path: '/gestao/gestores', label: 'Gestores da Conta', icon: '🧑‍💼' },
+  { path: '/gestao/auditoria', label: 'Auditoria Master', icon: '📋' },
+];
+
+export default function Layout({ isCompanyMode, isSuperAdmin }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { features, setFeatures } = useAdmin();
   const [company, setCompany] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarRef = useRef(null);
   const roleLabel = isCompanyMode ? 'Dono / Gestor' : (ROLE_LABEL[user?.role] || user?.role || 'Cliente');
+  const useMasterMenu = isSuperAdmin && !isCompanyMode;
+  const baseMenuItems = [
+    { path: '/gestao/dashboard', label: 'Dashboard', icon: '🏠' },
+    { path: '/gestao/appointments', label: 'Agenda', icon: '📅' },
+    { path: '/gestao/profissionais', label: 'Profissionais', icon: '👤' },
+    { path: '/gestao/customers', label: 'Clientes', icon: '👥' },
+    { path: '/gestao/pets', label: 'Pets', icon: '🐶' },
+  ];
+  if (!isCompanyMode || features.inventory !== false) {
+    baseMenuItems.push({ path: '/gestao/inventory', label: 'Estoque', icon: '📦' });
+  }
+  if (!isCompanyMode || features.pdv !== false) {
+    baseMenuItems.push({ path: '/gestao/pdv', label: 'PDV', icon: '💰' });
+  }
+  if (!isCompanyMode || features.finance !== false) {
+    baseMenuItems.push({ path: '/gestao/finance', label: 'Financeiro', icon: '📊' });
+  }
+  if (!isCompanyMode || features.reports !== false) {
+    baseMenuItems.push({ path: '/gestao/relatorios', label: 'Relatórios', icon: '📈' });
+  }
+  baseMenuItems.push(
+    { path: '/gestao/auditoria', label: 'Auditoria', icon: '📋' },
+    { path: '/gestao/codigos', label: 'Códigos de acesso', icon: '🎫' },
+    { path: '/gestao/configuracoes', label: 'Configurações', icon: '⚙️' },
+  );
+  if (isCompanyMode) {
+    baseMenuItems.push({ path: '/gestao/suporte', label: 'Suporte / Sugestões', icon: '💬' });
+  }
+  const menuItems = useMasterMenu ? MASTER_MENU_ITEMS : baseMenuItems;
+  const pageTitlesMap = useMasterMenu ? MASTER_PAGE_TITLES : PAGE_TITLES;
 
   useEffect(() => {
     if (isCompanyMode) {
       const id = localStorage.getItem('company_id');
-      if (id) companiesAPI.getById(id).then((r) => setCompany(r.data)).catch(() => {});
+      if (id) {
+        companiesAPI
+          .getById(id)
+          .then((r) => {
+            setCompany(r.data);
+            const enabled = r.data?.settings?.enabled_modules || {};
+            setFeatures({
+              pdv: enabled.pdv !== false,
+              finance: enabled.finance !== false,
+              inventory: enabled.inventory !== false,
+              reports: enabled.reports !== false,
+            });
+          })
+          .catch(() => {});
+      }
     }
-  }, [isCompanyMode]);
+  }, [isCompanyMode, setFeatures]);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -45,19 +113,23 @@ export default function Layout({ isCompanyMode }) {
   const handleVoltar = () => {
     if (window.history.length > 1) {
       navigate(-1);
-    } else if (isCompanyMode) {
-      navigate('/gestao/dashboard');
     } else {
-      navigate('/gestao/dashboard');
+      navigate(dashboardPath);
     }
   };
 
   const handleSair = () => {
     if (isCompanyMode) {
+      const wasImpersonating = localStorage.getItem('impersonating');
       localStorage.removeItem('company_token');
       localStorage.removeItem('company_id');
       localStorage.removeItem('company_role');
-      navigate('/company/login');
+      localStorage.removeItem('impersonating');
+      if (wasImpersonating && isSuperAdmin) {
+        navigate('/gestao/master');
+      } else {
+        navigate('/company/login');
+      }
     } else {
       logout();
       navigate('/');
@@ -69,30 +141,22 @@ export default function Layout({ isCompanyMode }) {
     ? (displayName.split(' ')[0][0] + displayName.split(' ').slice(-1)[0][0]).toUpperCase()
     : displayName[0].toUpperCase()) : 'U';
 
-  const currentTitle = Object.entries(PAGE_TITLES).find(([path]) => location.pathname.startsWith(path))?.[1] || 'Dashboard';
+  const currentTitle = Object.entries(pageTitlesMap).find(([path]) => location.pathname.startsWith(path))?.[1] || (useMasterMenu ? 'Dashboard Global' : 'Dashboard');
 
-  const menuItems = [
-    { path: '/gestao/dashboard', label: 'Dashboard', icon: '🏠' },
-    { path: '/gestao/appointments', label: 'Agenda', icon: '📅' },
-    { path: '/gestao/profissionais', label: 'Profissionais', icon: '👤' },
-    { path: '/gestao/customers', label: 'Clientes', icon: '👥' },
-    { path: '/gestao/pets', label: 'Pets', icon: '🐶' },
-    { path: '/gestao/inventory', label: 'Estoque', icon: '📦' },
-    { path: '/gestao/pdv', label: 'PDV', icon: '💰' },
-    { path: '/gestao/finance', label: 'Financeiro', icon: '📊' },
-    { path: '/gestao/relatorios', label: 'Relatórios', icon: '📈' },
+  /* Floating Tab Bar - só mobile (oculto no painel Master) */
+  const floatingItems = useMasterMenu ? [
+    { path: '/gestao/master', label: 'Dashboard', icon: '🌐' },
+    { path: '/gestao/lojas', label: 'Lojas', icon: '🏪' },
+    { path: '/gestao/tickets', label: 'Tickets', icon: '🎫' },
     { path: '/gestao/auditoria', label: 'Auditoria', icon: '📋' },
-    { path: '/gestao/codigos', label: 'Códigos de acesso', icon: '🎫' },
-    { path: '/gestao/configuracoes', label: 'Configurações', icon: '⚙️' },
-  ];
-
-  /* Floating Tab Bar - só mobile: Home, Pets, Agendar (destaque), Perfil */
-  const floatingItems = [
+  ] : [
     { path: '/gestao/dashboard', label: 'Home', icon: '🏠' },
     { path: '/gestao/pets', label: 'Pets', icon: '🐾' },
     { path: '/gestao/appointments', label: 'Agendar', icon: '📅', highlight: true },
     { path: '/gestao/configuracoes', label: 'Perfil', icon: '👤' },
   ];
+
+  const dashboardPath = useMasterMenu ? '/gestao/master' : '/gestao/dashboard';
 
   const isActive = (path) => location.pathname.startsWith(path);
 
@@ -117,7 +181,7 @@ export default function Layout({ isCompanyMode }) {
       >
         <div className="sidebar-header">
           <h1>🐾 Patatinha</h1>
-          <p>Painel de Gestão</p>
+          <p>{useMasterMenu ? 'Painel Master SaaS' : 'Painel de Gestão'}</p>
         </div>
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
@@ -179,6 +243,11 @@ export default function Layout({ isCompanyMode }) {
             </div>
           </div>
         </header>
+        {isCompanyMode && localStorage.getItem('impersonating') && (
+          <div className="layout-impersonation-banner" role="status">
+            Você está acessando como loja. Use &quot;Sair&quot; para voltar ao painel master.
+          </div>
+        )}
         <div className="content-area">
           <Outlet />
         </div>

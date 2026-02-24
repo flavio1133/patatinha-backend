@@ -8,22 +8,14 @@ export default function GestaoLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [shouldRedirect, setShouldRedirect] = useState(false); // NOVO ESTADO
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
-
-  // NOVO useEffect para redirecionamento forçado
-  useEffect(() => {
-    if (shouldRedirect) {
-      window.location.href = '/gestao/dashboard';
-    }
-  }, [shouldRedirect]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       const userRole = user.role;
       if (['super_admin', 'master', 'manager', 'employee', 'financial'].includes(userRole)) {
-        navigate('/gestao/dashboard');
+        navigate(userRole === 'super_admin' ? '/gestao/master' : '/gestao/dashboard');
       } else {
         navigate('/cliente/login');
       }
@@ -41,7 +33,9 @@ export default function GestaoLoginPage() {
       const currentUser = result.user || user;
       const userRole = currentUser?.role;
       if (['super_admin', 'master', 'manager', 'employee', 'financial'].includes(userRole)) {
-        setShouldRedirect(true); // ← ATIVA O REDIRECIONAMENTO FORÇADO
+        const dest = userRole === 'super_admin' ? '/gestao/master' : '/gestao/dashboard';
+        window.location.href = dest;
+        return;
       } else {
         setError('Esta área é apenas para funcionários. Use a área do cliente.');
         setTimeout(() => navigate('/cliente/login'), 2000);

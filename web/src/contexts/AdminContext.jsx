@@ -8,6 +8,12 @@ export function AdminProvider({ children }) {
     const stored = localStorage.getItem('admin_preferences');
     return stored ? JSON.parse(stored) : { theme: 'light', pageSize: 10 };
   });
+  const [features, setFeatures] = useState({
+    pdv: true,
+    finance: true,
+    inventory: true,
+    reports: true,
+  });
 
   useEffect(() => {
     localStorage.setItem('admin_preferences', JSON.stringify(preferences));
@@ -46,6 +52,8 @@ export function AdminProvider({ children }) {
         markAllNotificationsAsRead,
         preferences,
         updatePreferences,
+        features,
+        setFeatures,
       }}
     >
       {children}
@@ -64,6 +72,8 @@ export function useAdmin() {
       markAllNotificationsAsRead: () => {},
       preferences: { theme: 'light', pageSize: 10 },
       updatePreferences: () => {},
+      features: { pdv: true, finance: true, inventory: true, reports: true },
+      setFeatures: () => {},
     }
   );
 }

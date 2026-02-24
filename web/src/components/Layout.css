@@ -255,6 +255,14 @@
   color: #c0c0c0;
 }
 
+.layout-impersonation-banner {
+  padding: 10px 32px;
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+}
+
 .content-area {
   flex: 1;
   min-height: 0;

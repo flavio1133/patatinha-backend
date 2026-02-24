@@ -20,7 +20,7 @@ const validate = (req, res, next) => {
 };
 
 // Listar vendas (com filtros)
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, require('../middleware/subscription.middleware').checkSubscription, (req, res) => {
   const { startDate, endDate, customerId, paymentMethod } = req.query;
   let filteredSales = [...sales];
 
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // Obter venda específica
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, require('../middleware/subscription.middleware').checkSubscription, (req, res) => {
   const sale = sales.find(s => s.id === parseInt(req.params.id));
 
   if (!sale) {

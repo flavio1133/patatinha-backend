@@ -136,6 +136,7 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!user,
         isMaster: user?.role === 'master',
         isManager: ['master', 'manager'].includes(user?.role),
+        isSuperAdmin: user?.role === 'super_admin',
       }}
     >
       {children}

@@ -10,8 +10,9 @@ function getCompanies() {
 
 async function checkSubscription(req, res, next) {
   const companyId = req.companyId;
+  // Se não houver companyId, não é um contexto de empresa (ex.: Super Admin) – deixa passar
   if (!companyId) {
-    return res.status(401).json({ error: 'Empresa não autenticada' });
+    return next();
   }
 
   const companies = getCompanies();
@@ -52,7 +53,7 @@ async function checkSubscription(req, res, next) {
     return next();
   }
 
-  // Caso 4: Outros status (past_due, canceled, pending)
+  // Caso 4: Outros status (past_due, pending)
   if (['past_due', 'pending'].includes(company.subscription_status)) {
     return res.status(402).json({
       error: 'Assinatura irregular',
@@ -67,6 +68,15 @@ async function checkSubscription(req, res, next) {
       error: 'Assinatura cancelada',
       code: 'SUBSCRIPTION_CANCELED',
       message: 'Sua assinatura foi cancelada. Reative para continuar.',
+    });
+  }
+
+  // Caso 5: Bloqueado manualmente (Kill Switch)
+  if (company.subscription_status === 'blocked') {
+    return res.status(402).json({
+      error: 'Acesso bloqueado pela administração',
+      code: 'SUBSCRIPTION_BLOCKED',
+      message: 'Entre em contato com o suporte para regularizar sua assinatura.',
     });
   }
 

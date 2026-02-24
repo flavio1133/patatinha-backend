@@ -35,7 +35,12 @@ api.interceptors.request.use(
     const companyToken = localStorage.getItem('company_token');
     const authToken = localStorage.getItem('auth_token');
 
-    // Na gestão com login da empresa: priorizar company_token para todas as rotas da API
+    // Painel Master (Super Admin): sempre usar auth_token para rotas /master/
+    if (url.includes('/master/') && authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
+      return config;
+    }
+    // Na gestão com login da empresa: priorizar company_token para as demais rotas
     if (companyToken) {
       config.headers.Authorization = `Bearer ${companyToken}`;
       return config;
@@ -257,6 +262,58 @@ export const adminAPI = {
     api.get('/admin/dashboard', { params }),
   getConsolidatedReport: (params) =>
     api.get('/admin/reports/consolidated', { params }),
+};
+
+export const masterAPI = {
+  getDashboard: () =>
+    api.get('/master/dashboard'),
+  getCompanies: () =>
+    api.get('/master/companies'),
+  getCompany: (id) =>
+    api.get(`/master/companies/${id}`),
+  impersonate: (companyId) =>
+    api.post('/master/impersonate', { companyId }),
+  updateCompany: (id, data) =>
+    api.patch(`/master/companies/${id}`, data),
+  getStaff: () =>
+    api.get('/master/staff'),
+  createStaff: (data) =>
+    api.post('/master/staff', data),
+  updateStaff: (id, data) =>
+    api.put(`/master/staff/${id}`, data),
+  deleteStaff: (id) =>
+    api.delete(`/master/staff/${id}`),
+  manualPayment: (companyId, data) =>
+    api.post(`/master/companies/${companyId}/manual-payment`, data),
+  updateCompanyModules: (companyId, modules) =>
+    api.patch(`/master/companies/${companyId}/modules`, { modules }),
+  updateOwner: (companyId, data) =>
+    api.patch(`/master/companies/${companyId}/owner`, data),
+  resetOwnerPassword: (companyId, data) =>
+    api.post(`/master/companies/${companyId}/owner/reset-password`, data),
+  updateOwnerStatus: (companyId, data) =>
+    api.patch(`/master/companies/${companyId}/owner/status`, data),
+};
+
+export const ticketsAPI = {
+  // Lado da empresa (Gestor da loja)
+  create: (data) =>
+    api.post('/tickets', data),
+  listMine: () =>
+    api.get('/tickets'),
+  getOne: (id) =>
+    api.get(`/tickets/${id}`),
+  replyAsCompany: (id, data) =>
+    api.post(`/tickets/${id}/reply`, data),
+  // Lado Master / Staff
+  listAll: () =>
+    api.get('/tickets/master'),
+  getMasterTicket: (id) =>
+    api.get(`/tickets/master/${id}`),
+  replyAsStaff: (id, data) =>
+    api.post(`/tickets/master/${id}/reply`, data),
+  updateAsStaff: (id, data) =>
+    api.patch(`/tickets/master/${id}`, data),
 };
 
 export const reportsAPI = {

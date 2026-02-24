@@ -21,6 +21,10 @@ function authenticateToken(req, res, next) {
       if (user.type === 'company' && user.role === 'owner') {
         role = 'manager';
       }
+      if (user.type === 'company') {
+        // Guardar companyId para middleware de assinatura/bloqueio
+        req.companyId = user.companyId || user.id;
+      }
       req.user = {
         ...user,
         role,

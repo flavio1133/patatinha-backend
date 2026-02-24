@@ -78,6 +78,7 @@ function initTestCompany() {
     trial_end: trialEnd,
     subscription_status: 'trial',
     subscription_plan_id: null,
+    owner_is_active: true,
     payment_customer_id: null,
     payment_method: null,
     created_at: now,
@@ -96,6 +97,12 @@ function initTestCompany() {
       sunday: 'Fechado',
     },
     services_offered: ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
+    enabled_modules: {
+      pdv: true,
+      finance: true,
+      inventory: true,
+      reports: true,
+    },
     employees: [],
     created_at: now,
     updated_at: now,
@@ -250,6 +257,9 @@ router.post('/login', [
   // 1. Tentar login como dono da empresa
   const company = companies.find((c) => c.email.toLowerCase() === emailLower);
   if (company && company.password_hash) {
+    if (company.owner_is_active === false) {
+      return res.status(403).json({ error: 'Gestor inativo. Entre em contato com o suporte.' });
+    }
     const valid = await bcrypt.compare(password, company.password_hash);
     if (valid) {
       const token = jwt.sign(
@@ -332,6 +342,7 @@ router.post('/register', [
     logo_url: req.body.logo_url || null,
     website: req.body.website?.trim() || null,
     instagram: req.body.instagram?.trim() || null,
+    owner_is_active: true,
     trial_start: now,
     trial_end: trialEnd,
     subscription_status: 'trial',
@@ -349,6 +360,12 @@ router.post('/register', [
     company_id: company.id,
     opening_hours: req.body.opening_hours || {},
     services_offered: req.body.services_offered || ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
+    enabled_modules: {
+      pdv: true,
+      finance: true,
+      inventory: true,
+      reports: true,
+    },
     employees: [],
     created_at: now,
     updated_at: now,

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth.middleware');
+const { checkSubscription } = require('../middleware/subscription.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const {
   canCancelAppointment,
