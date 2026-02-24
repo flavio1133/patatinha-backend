@@ -12,6 +12,28 @@ const { invitationCodes, nextCodeId } = require('../data/invitation-codes.data')
 
 const JWT_SECRET = process.env.JWT_SECRET || 'patatinha-secret-key-change-in-production';
 
+// CPF helpers (para cadastros de Pessoa Física)
+function stripCpf(cpf) {
+  return String(cpf || '').replace(/\D/g, '');
+}
+
+function validateCpfDigits(cpf) {
+  const s = stripCpf(cpf);
+  if (s.length !== 11) return false;
+  if (/^(\d)\1+$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(s.charAt(i), 10) * (10 - i);
+  let d1 = 11 - (sum % 11);
+  if (d1 >= 10) d1 = 0;
+  if (parseInt(s.charAt(9), 10) !== d1) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(s.charAt(i), 10) * (11 - i);
+  let d2 = 11 - (sum % 11);
+  if (d2 >= 10) d2 = 0;
+  if (parseInt(s.charAt(10), 10) !== d2) return false;
+  return true;
+}
+
 // Middleware de autenticação da empresa (dono ou funcionário)
 function authCompany(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
@@ -57,6 +79,7 @@ function initTestCompany() {
   trialEnd.setDate(trialEnd.getDate() + 15);
   companies.push({
     id: 'comp_1',
+    person_type: 'pj',
     name: 'Patatinha Recife',
     legal_name: 'Patatinha Pet Shop Ltda',
     cnpj: '11.222.333/0001-81',
@@ -295,7 +318,9 @@ router.post('/login', [
 router.post('/register', [
   body('name').trim().notEmpty().withMessage('Nome fantasia é obrigatório'),
   body('legal_name').trim().notEmpty().withMessage('Razão social é obrigatória'),
-  body('cnpj').notEmpty().withMessage('CNPJ é obrigatório'),
+  body('person_type').optional().isIn(['pf', 'pj']).withMessage('Tipo de pessoa inválido'),
+  body('cnpj').optional().trim(),
+  body('cpf').optional().trim(),
   body('email').isEmail().withMessage('E-mail inválido'),
   body('password').trim().isLength({ min: 6 }).withMessage('Senha deve ter pelo menos 6 caracteres'),
   body('phone').trim().notEmpty().withMessage('Telefone é obrigatório'),
@@ -306,14 +331,33 @@ router.post('/register', [
   body('state').trim().isLength({ min: 2, max: 2 }).withMessage('Estado deve ter 2 caracteres'),
   body('zip_code').trim().notEmpty().withMessage('CEP é obrigatório'),
 ], validate, async (req, res) => {
-  const cnpjClean = stripCnpj(req.body.cnpj);
-  const cnpjCheck = validateCnpj(cnpjClean);
-  if (!cnpjCheck.valid) {
-    return res.status(400).json({ error: cnpjCheck.message });
+  const personType = (req.body.person_type || 'pj').toLowerCase();
+  const cnpjClean = stripCnpj(req.body.cnpj || '');
+  const cpfClean = stripCpf(req.body.cpf || '');
+
+  if (personType === 'pj') {
+    if (!cnpjClean) {
+      return res.status(400).json({ error: 'CNPJ é obrigatório para Pessoa Jurídica' });
+    }
+    const cnpjCheck = validateCnpj(cnpjClean);
+    if (!cnpjCheck.valid) {
+      return res.status(400).json({ error: cnpjCheck.message });
+    }
+    if (companies.some((c) => stripCnpj(c.cnpj) === cnpjClean)) {
+      return res.status(400).json({ error: 'CNPJ já cadastrado' });
+    }
+  } else if (personType === 'pf') {
+    if (!cpfClean) {
+      return res.status(400).json({ error: 'CPF é obrigatório para Pessoa Física' });
+    }
+    if (!validateCpfDigits(cpfClean)) {
+      return res.status(400).json({ error: 'CPF inválido' });
+    }
+    if (companies.some((c) => c.person_type === 'pf' && stripCpf(c.cpf) === cpfClean)) {
+      return res.status(400).json({ error: 'CPF já cadastrado' });
+    }
   }
-  if (companies.some((c) => stripCnpj(c.cnpj) === cnpjClean)) {
-    return res.status(400).json({ error: 'CNPJ já cadastrado' });
-  }
+
   if (companies.some((c) => c.email.toLowerCase() === req.body.email.trim().toLowerCase())) {
     return res.status(400).json({ error: 'E-mail já cadastrado' });
   }
@@ -323,12 +367,28 @@ router.post('/register', [
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 15);
 
+  const personType = (req.body.person_type || 'pj').toLowerCase();
+  const cpfClean = stripCpf(req.body.cpf);
+  if (personType === 'pf') {
+    if (!cpfClean) {
+      return res.status(400).json({ error: 'CPF é obrigatório para Pessoa Física' });
+    }
+    if (!validateCpfDigits(cpfClean)) {
+      return res.status(400).json({ error: 'CPF inválido' });
+    }
+    if (companies.some((c) => c.person_type === 'pf' && stripCpf(c.cpf) === cpfClean)) {
+      return res.status(400).json({ error: 'CPF já cadastrado' });
+    }
+  }
+
   const company = {
     id: generateId(),
+    person_type: personType,
+    cpf: personType === 'pf' ? cpfClean : null,
     name: req.body.name.trim(),
     password_hash,
     legal_name: req.body.legal_name.trim(),
-    cnpj: formatCnpj(cnpjClean),
+    cnpj: personType === 'pj' ? formatCnpj(cnpjClean) : null,
     email: req.body.email.trim(),
     phone: req.body.phone.trim(),
     whatsapp: req.body.whatsapp?.trim() || null,

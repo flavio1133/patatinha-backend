@@ -29,13 +29,44 @@ function stripCnpj(v) {
   return String(v).replace(/\D/g, '');
 }
 
+function formatCpfInput(v) {
+  const s = String(v).replace(/\D/g, '').slice(0, 11);
+  if (s.length <= 3) return s;
+  if (s.length <= 6) return s.slice(0, 3) + '.' + s.slice(3);
+  if (s.length <= 9) return s.slice(0, 3) + '.' + s.slice(3, 6) + '.' + s.slice(6);
+  return s.slice(0, 3) + '.' + s.slice(3, 6) + '.' + s.slice(6, 9) + '-' + s.slice(9);
+}
+
+function stripCpf(v) {
+  return String(v).replace(/\D/g, '');
+}
+
+function validateCpfDigits(v) {
+  const s = stripCpf(v);
+  if (s.length !== 11) return false;
+  if (/^(\d)\1+$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(s.charAt(i), 10) * (10 - i);
+  let d1 = 11 - (sum % 11);
+  if (d1 >= 10) d1 = 0;
+  if (parseInt(s.charAt(9), 10) !== d1) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(s.charAt(i), 10) * (11 - i);
+  let d2 = 11 - (sum % 11);
+  if (d2 >= 10) d2 = 0;
+  if (parseInt(s.charAt(10), 10) !== d2) return false;
+  return true;
+}
+
 export default function EmpresaCadastroPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [cnpjStatus, setCnpjStatus] = useState({ valid: null, message: '' });
   const [form, setForm] = useState({
+    person_type: 'pj',
     name: '',
     legal_name: '',
+    cpf: '',
     cnpj: '',
     email: '',
     password: '',
@@ -61,7 +92,7 @@ export default function EmpresaCadastroPage() {
   const { refetch: validateCnpj } = useQuery({
     queryKey: ['cnpj', stripCnpj(form.cnpj)],
     queryFn: () => axios.get('/api/companies/validate-cnpj/' + stripCnpj(form.cnpj)).then((r) => r.data),
-    enabled: stripCnpj(form.cnpj).length === 14,
+    enabled: form.person_type === 'pj' && stripCnpj(form.cnpj).length === 14,
     retry: false,
     onSuccess: (data) => setCnpjStatus({ valid: data.valid, message: data.message }),
     onError: () => setCnpjStatus({ valid: false, message: 'Erro ao validar' }),
@@ -77,7 +108,7 @@ export default function EmpresaCadastroPage() {
   });
 
   const handleCnpjBlur = () => {
-    if (stripCnpj(form.cnpj).length === 14) validateCnpj();
+    if (form.person_type === 'pj' && stripCnpj(form.cnpj).length === 14) validateCnpj();
   };
 
   const fetchCep = useCallback(() => {
@@ -96,7 +127,15 @@ export default function EmpresaCadastroPage() {
       .catch(() => {});
   }, [form.zip_code]);
 
-  const canStep1 = form.name && form.legal_name && stripCnpj(form.cnpj).length === 14 && cnpjStatus.valid;
+  const cnpjDigits = stripCnpj(form.cnpj).length;
+  const cpfDigits = stripCpf(form.cpf).length;
+  const isPj = form.person_type === 'pj';
+  const isPf = form.person_type === 'pf';
+  const cpfOk = isPf ? (cpfDigits === 11 && validateCpfDigits(form.cpf)) : true;
+  const canStep1 =
+    form.name &&
+    form.legal_name &&
+    ((isPj && cnpjDigits === 14 && cnpjStatus.valid) || (isPf && cpfOk));
   const passwordsMatch = form.password === form.confirmPassword && form.password.length >= 6;
   const canStep2 = form.email && form.phone && form.address && form.address_number && form.neighborhood && form.city && form.state && form.zip_code && passwordsMatch;
   const canStep4 = form.terms;
@@ -108,7 +147,9 @@ export default function EmpresaCadastroPage() {
     form.closed_days.forEach((d) => { opening[d] = 'Fechado'; });
     const payload = {
       ...form,
-      cnpj: stripCnpj(form.cnpj),
+      person_type: form.person_type,
+      cpf: form.person_type === 'pf' ? stripCpf(form.cpf) : '',
+      cnpj: form.person_type === 'pj' ? stripCnpj(form.cnpj) : '',
       zip_code: form.zip_code.replace(/\D/g, ''),
       opening_hours: opening,
       services_offered: form.services_offered,
@@ -140,29 +181,81 @@ export default function EmpresaCadastroPage() {
             <div className="form-step">
               <h2>Etapa 1: Dados da empresa</h2>
               <div className="form-group">
+                <label>Tipo de cadastro *</label>
+                <div className="radio-row">
+                  <label>
+                    <input
+                      type="radio"
+                      name="person_type"
+                      value="pj"
+                      checked={form.person_type === 'pj'}
+                      onChange={() => {
+                        updateForm('person_type', 'pj');
+                        setCnpjStatus({ valid: null, message: '' });
+                      }}
+                    />
+                    Pessoa Jurídica (CNPJ)
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="person_type"
+                      value="pf"
+                      checked={form.person_type === 'pf'}
+                      onChange={() => {
+                        updateForm('person_type', 'pf');
+                        setCnpjStatus({ valid: null, message: '' });
+                      }}
+                    />
+                    Pessoa Física (CPF)
+                  </label>
+                </div>
+              </div>
+              <div className="form-group">
                 <label>Nome fantasia *</label>
                 <input value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder="Ex.: Pet Shop Patatinha" required />
               </div>
               <div className="form-group">
-                <label>Razao social *</label>
-                <input value={form.legal_name} onChange={(e) => updateForm('legal_name', e.target.value)} placeholder="Razao social" required />
-              </div>
-              <div className="form-group">
-                <label>CNPJ *</label>
+                <label>{form.person_type === 'pf' ? 'Nome completo *' : 'Razao social *'}</label>
                 <input
-                  value={form.cnpj}
-                  onChange={(e) => {
-                    updateForm('cnpj', formatCnpjInput(e.target.value));
-                    setCnpjStatus({ valid: null, message: '' });
-                  }}
-                  onBlur={handleCnpjBlur}
-                  placeholder="00.000.000/0000-00"
-                  maxLength={18}
+                  value={form.legal_name}
+                  onChange={(e) => updateForm('legal_name', e.target.value)}
+                  placeholder={form.person_type === 'pf' ? 'Nome completo do responsável' : 'Razao social'}
+                  required
                 />
-                {cnpjStatus.valid !== null && (
-                  <span className={'cnpj-feedback ' + (cnpjStatus.valid ? 'valid' : 'invalid')}>{cnpjStatus.message}</span>
-                )}
               </div>
+              {form.person_type === 'pf' && (
+                <div className="form-group">
+                  <label>CPF *</label>
+                  <input
+                    value={form.cpf}
+                    onChange={(e) => updateForm('cpf', formatCpfInput(e.target.value))}
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                  />
+                  {form.cpf && !cpfOk && (
+                    <span className="cnpj-feedback invalid">CPF inválido</span>
+                  )}
+                </div>
+              )}
+              {form.person_type === 'pj' && (
+                <div className="form-group">
+                  <label>CNPJ *</label>
+                  <input
+                    value={form.cnpj}
+                    onChange={(e) => {
+                      updateForm('cnpj', formatCnpjInput(e.target.value));
+                      setCnpjStatus({ valid: null, message: '' });
+                    }}
+                    onBlur={handleCnpjBlur}
+                    placeholder="00.000.000/0000-00"
+                    maxLength={18}
+                  />
+                  {cnpjStatus.valid !== null && (
+                    <span className={'cnpj-feedback ' + (cnpjStatus.valid ? 'valid' : 'invalid')}>{cnpjStatus.message}</span>
+                  )}
+                </div>
+              )}
               <button type="button" className="btn-next" onClick={() => setStep(2)} disabled={!canStep1}>Continuar</button>
             </div>
           )}
