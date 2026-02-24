@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationsCenter from './Notifications/NotificationsCenter';
 import { companiesAPI } from '../services/api';
@@ -20,7 +20,7 @@ const PAGE_TITLES = {
   '/gestao/configuracoes': 'Configurações',
 };
 
-export default function Layout({ children, isCompanyMode }) {
+export default function Layout({ isCompanyMode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -165,7 +165,7 @@ export default function Layout({ children, isCompanyMode }) {
             </div>
           </div>
         </header>
-        <div className="content-area">{children}</div>
+        <div className="content-area"><Outlet /></div>
       </main>
     </div>
   );

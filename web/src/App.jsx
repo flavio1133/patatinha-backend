@@ -43,70 +43,54 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ClientProvider } from './contexts/ClientContext';
 import { BookingProvider } from './contexts/BookingContext';
 
-// Rotas protegidas para GestÃ£o (auth OU dono da empresa com company_token)
-function GestaoRoutes() {
+// Rotas protegidas para Gestão (auth OU dono da empresa com company_token)
+function GestaoGate() {
   const { isAuthenticated, user } = useAuth();
   const companyToken = localStorage.getItem('company_token');
   const companyRole = localStorage.getItem('company_role');
   const companyId = localStorage.getItem('company_id');
   const isCompanyOwner = !!(companyToken && (companyRole === 'owner' || companyId));
 
-  // Dono da empresa com company_token: pode acessar o painel administrativo
   if (isCompanyOwner) {
     return (
       <AdminProvider>
-        <Layout isCompanyMode>
-          <Routes>
-            <Route path="/gestao/dashboard" element={<DashboardPage />} />
-            <Route path="/gestao/customers" element={<CustomersPage />} />
-            <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
-            <Route path="/gestao/appointments" element={<AppointmentsPage />} />
-            <Route path="/gestao/inventory" element={<InventoryPage />} />
-            <Route path="/gestao/pets" element={<AdminPetsPage />} />
-            <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
-            <Route path="/gestao/pdv" element={<PDVPage />} />
-            <Route path="/gestao/finance" element={<FinancePage />} />
-            <Route path="/gestao/relatorios" element={<RelatoriosPage />} />
-            <Route path="/gestao/codigos" element={<CompanyInvitationCodesPage />} />
-            <Route path="/gestao/configuracoes" element={<ConfiguracoesPage />} />
-            <Route path="/gestao" element={<Navigate to="/gestao/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/gestao/dashboard" replace />} />
-          </Routes>
-        </Layout>
+        <Layout isCompanyMode />
       </AdminProvider>
     );
   }
-
   if (!isAuthenticated) {
-    return <Navigate to="/gestao/login" />;
+    return <Navigate to="/gestao/login" replace />;
   }
-
-  // Cliente tentando acessar gestÃ£o: redireciona para sua Ã¡rea (nÃ£o para login)
   if (!['super_admin', 'master', 'manager', 'employee', 'financial'].includes(user?.role)) {
     return <Navigate to="/cliente/home" replace />;
   }
-
   return (
     <AdminProvider>
-      <Layout>
-        <Routes>
-          <Route path="/gestao/dashboard" element={<DashboardPage />} />
-          <Route path="/gestao/customers" element={<CustomersPage />} />
-          <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
-          <Route path="/gestao/appointments" element={<AppointmentsPage />} />
-          <Route path="/gestao/inventory" element={<InventoryPage />} />
-          <Route path="/gestao/pets" element={<AdminPetsPage />} />
-          <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
-          <Route path="/gestao/pdv" element={<PDVPage />} />
-          <Route path="/gestao/finance" element={<FinancePage />} />
-          <Route path="/gestao/relatorios" element={<RelatoriosPage />} />
-          <Route path="/gestao/codigos" element={<CompanyInvitationCodesPage />} />
-          <Route path="/gestao/configuracoes" element={<ConfiguracoesPage />} />
-          <Route path="/gestao" element={<Navigate to="/gestao/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/gestao/dashboard" replace />} />
-        </Routes>
-      </Layout>
+      <Layout />
     </AdminProvider>
+  );
+}
+
+function GestaoRoutes() {
+  return (
+    <Routes>
+      <Route path="/gestao/*" element={<GestaoGate />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="customers/:id" element={<CustomerDetailPage />} />
+        <Route path="appointments" element={<AppointmentsPage />} />
+        <Route path="inventory" element={<InventoryPage />} />
+        <Route path="pets" element={<AdminPetsPage />} />
+        <Route path="pets/:id" element={<AdminPetDetailPage />} />
+        <Route path="pdv" element={<PDVPage />} />
+        <Route path="finance" element={<FinancePage />} />
+        <Route path="relatorios" element={<RelatoriosPage />} />
+        <Route path="codigos" element={<CompanyInvitationCodesPage />} />
+        <Route path="configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="*" element={<Navigate to="dashboard" replace />} />
+      </Route>
+    </Routes>
   );
 }
 
