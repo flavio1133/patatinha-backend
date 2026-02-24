@@ -7,6 +7,21 @@ export default defineConfig({
       include: '**/*.{jsx,js}',
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'react-vendor';
+          if (id.includes('node_modules/react-router')) return 'router';
+          if (id.includes('node_modules/recharts')) return 'recharts';
+          if (id.includes('node_modules/axios')) return 'axios';
+          if (id.includes('node_modules/@tanstack/react-query')) return 'query';
+          if (id.includes('node_modules/date-fns')) return 'date-fns';
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   esbuild: {
     loader: 'jsx',
     include: /src\/.*\.jsx?$/,

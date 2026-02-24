@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -238,6 +239,15 @@ export default function AppointmentsPage() {
 
   return (
     <div className="appointments-page">
+      <div className="agenda-availability-card">
+        <div className="agenda-availability-text">
+          <strong>📅 Disponibilidade da sua agenda</strong>
+          <p>Defina os dias e horários em que você atende. Esses mesmos dias e horários serão exibidos para o cliente ao agendar.</p>
+        </div>
+        <Link to="/gestao/configuracoes#disponibilidade" className="btn-primary agenda-availability-btn">
+          Configurar dias e horários
+        </Link>
+      </div>
       <div className="agenda-controls">
         <div className="agenda-date">
           <button type="button" onClick={() => setSelectedDate(addDays(selectedDate, -1))}>←</button>

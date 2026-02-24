@@ -37,6 +37,39 @@
 .inventory-table tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
 .btn-sm { padding: 6px 12px; font-size: 12px; background: #2e7d32; color: white; border: none; border-radius: 8px; cursor: pointer; }
 
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.page-header .search-box input {
+  padding: 10px 14px;
+  border: 1px solid #404040;
+  border-radius: 10px;
+  background: #252525;
+  color: #e4e4e4;
+  min-width: 220px;
+}
+.page-header select {
+  padding: 10px 14px;
+  border: 1px solid #404040;
+  border-radius: 10px;
+  background: #252525;
+  color: #e4e4e4;
+}
+.page-header .btn-primary {
+  padding: 10px 18px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.page-header .btn-primary:hover { background: #388e3c; }
+
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content {
   background: #1e1e1e;
@@ -46,6 +79,37 @@
   max-width: 400px;
   width: 90%;
 }
+.modal-content.modal-new-product {
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-content h3 { margin: 0 0 16px 0; color: #f0f0f0; font-size: 1.2rem; }
+.modal-content .form-group { margin-bottom: 14px; }
+.modal-content .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #b0b0b0; }
+.modal-content .form-group input,
+.modal-content .form-group select,
+.modal-content .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  background: #252525;
+  color: #e4e4e4;
+  font-size: 14px;
+}
+.modal-content .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.modal-content .form-row .form-group { flex: 1; min-width: 120px; }
+.modal-content .form-checkbox label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: #c0c0c0; }
+.modal-content .form-checkbox input[type="checkbox"] { width: auto; }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid #333; }
+.modal-actions .btn-primary { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.modal-actions .btn-primary:hover:not(:disabled) { background: #388e3c; }
+.modal-actions .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+.modal-actions .btn-secondary { padding: 10px 20px; background: #404040; color: #e4e4e4; border: none; border-radius: 8px; cursor: pointer; }
+.modal-actions .btn-secondary:hover:not(:disabled) { background: #505050; }
+.modal-actions .btn-secondary:disabled { opacity: 0.7; cursor: not-allowed; }
+.loading { text-align: center; padding: 40px; color: #a0a0a0; }
 
 .stock-status { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
 .status-normal { background: rgba(46, 125, 50, 0.25); color: #a5d6a7; }

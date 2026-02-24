@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationsCenter from './Notifications/NotificationsCenter';
 import { companiesAPI } from '../services/api';
@@ -20,7 +20,7 @@ const PAGE_TITLES = {
   '/gestao/configuracoes': 'Configurações',
 };
 
-export default function Layout({ children, isCompanyMode }) {
+export default function Layout({ isCompanyMode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -82,6 +82,16 @@ export default function Layout({ children, isCompanyMode }) {
     { path: '/gestao/configuracoes', label: 'Configurações', icon: '⚙️' },
   ];
 
+  /* Floating Tab Bar - só mobile: Home, Pets, Agendar (destaque), Perfil */
+  const floatingItems = [
+    { path: '/gestao/dashboard', label: 'Home', icon: '🏠' },
+    { path: '/gestao/pets', label: 'Pets', icon: '🐾' },
+    { path: '/gestao/appointments', label: 'Agendar', icon: '📅', highlight: true },
+    { path: '/gestao/configuracoes', label: 'Perfil', icon: '👤' },
+  ];
+
+  const isActive = (path) => location.pathname.startsWith(path);
+
   return (
     <div className="layout">
       {/* Overlay mobile */}
@@ -110,7 +120,7 @@ export default function Layout({ children, isCompanyMode }) {
             <Link
               key={item.path}
               to={item.path}
-              className={`nav-item ${location.pathname.startsWith(item.path) ? 'active' : ''}`}
+              className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
@@ -165,8 +175,25 @@ export default function Layout({ children, isCompanyMode }) {
             </div>
           </div>
         </header>
-        <div className="content-area">{children}</div>
+        <div className="content-area">
+          <Outlet />
+        </div>
       </main>
+
+      {/* Floating Tab Bar - apenas mobile */}
+      <nav className="layout-floating-bar" aria-label="Navegação principal">
+        {floatingItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`layout-floating-link ${item.highlight ? 'highlight' : ''} ${isActive(item.path) ? 'active' : ''}`}
+            aria-current={isActive(item.path) ? 'page' : undefined}
+          >
+            <span className="layout-floating-icon">{item.icon}</span>
+            <span className="layout-floating-label">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

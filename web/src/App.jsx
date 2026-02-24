@@ -1,51 +1,54 @@
-import { Routes, Route, Navigate, useRoutes, useLocation } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
-import HomePage from './pages/HomePage';
-import EmpresaCadastroPage from './pages/EmpresaCadastroPage';
-import EmpresaLoginPage from './pages/EmpresaLoginPage';
-import EmpresaDashboardPage from './pages/EmpresaDashboardPage';
-import TesteLoginsPage from './pages/TesteLoginsPage';
-import SubscriptionPlansPage from './pages/SubscriptionPlansPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import SubscriptionManagementPage from './pages/SubscriptionManagementPage';
-import CompanyInvitationCodesPage from './pages/CompanyInvitationCodesPage';
-import ClienteEnterCodePage from './pages/ClienteEnterCodePage';
-import ClienteLoginPage from './pages/ClienteLoginPage';
-import ClienteCadastroPage from './pages/ClienteCadastroPage';
-import GestaoLoginPage from './pages/GestaoLoginPage';
-import DashboardPage from './pages/DashboardPage';
-import CustomersPage from './pages/CustomersPage';
-import CustomerDetailPage from './pages/CustomerDetailPage';
-import AppointmentsPage from './pages/AppointmentsPage';
-import InventoryPage from './pages/InventoryPage';
-import FinancePage from './pages/FinancePage';
-import AdminPetsPage from './pages/AdminPetsPage';
-import AdminPetDetailPage from './pages/AdminPetDetailPage';
-import PDVPage from './pages/PDVPage';
-import RelatoriosPage from './pages/RelatoriosPage';
-import ConfiguracoesPage from './pages/ConfiguracoesPage';
-import ClienteDashboardPage from './pages/ClienteDashboardPage';
-import ClientBookingFlow from './pages/ClientBookingFlow';
-import ClientAppointmentsPage from './pages/ClientAppointmentsPage';
-import ClientNotificationsPage from './pages/ClientNotificationsPage';
-import ClientePetsPage from './pages/ClientePetsPage';
-import ClientePetFormPage from './pages/ClientePetFormPage';
-import ClientePetDetailPage from './pages/ClientePetDetailPage';
-import ClienteHistoricoPage from './pages/ClienteHistoricoPage';
-import ClienteGaleriaPage from './pages/ClienteGaleriaPage';
-import ClientePerfilPage from './pages/ClientePerfilPage';
 import Layout from './components/Layout';
 import ClienteLayout from './components/ClienteLayout';
+import PageLoader from './components/PageLoader';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { AdminProvider } from './contexts/AdminContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ClientProvider } from './contexts/ClientContext';
 import { BookingProvider } from './contexts/BookingContext';
 
-// Rotas protegidas para Gestão (auth OU dono da empresa com company_token)
-function GestaoRoutes() {
-  const location = useLocation();
+/* Lazy: páginas carregadas só quando a rota é acessada (gestão mais leve) */
+const HomePage = lazy(() => import('./pages/HomePage'));
+const EmpresaCadastroPage = lazy(() => import('./pages/EmpresaCadastroPage'));
+const EmpresaLoginPage = lazy(() => import('./pages/EmpresaLoginPage'));
+const EmpresaDashboardPage = lazy(() => import('./pages/EmpresaDashboardPage'));
+const TesteLoginsPage = lazy(() => import('./pages/TesteLoginsPage'));
+const SubscriptionPlansPage = lazy(() => import('./pages/SubscriptionPlansPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
+const SubscriptionManagementPage = lazy(() => import('./pages/SubscriptionManagementPage'));
+const CompanyInvitationCodesPage = lazy(() => import('./pages/CompanyInvitationCodesPage'));
+const ClienteEnterCodePage = lazy(() => import('./pages/ClienteEnterCodePage'));
+const ClienteLoginPage = lazy(() => import('./pages/ClienteLoginPage'));
+const ClienteCadastroPage = lazy(() => import('./pages/ClienteCadastroPage'));
+const GestaoLoginPage = lazy(() => import('./pages/GestaoLoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const CustomersPage = lazy(() => import('./pages/CustomersPage'));
+const CustomerDetailPage = lazy(() => import('./pages/CustomerDetailPage'));
+const AppointmentsPage = lazy(() => import('./pages/AppointmentsPage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const FinancePage = lazy(() => import('./pages/FinancePage'));
+const AdminPetsPage = lazy(() => import('./pages/AdminPetsPage'));
+const AdminPetDetailPage = lazy(() => import('./pages/AdminPetDetailPage'));
+const PDVPage = lazy(() => import('./pages/PDVPage'));
+const RelatoriosPage = lazy(() => import('./pages/RelatoriosPage'));
+const ConfiguracoesPage = lazy(() => import('./pages/ConfiguracoesPage'));
+const ClienteDashboardPage = lazy(() => import('./pages/ClienteDashboardPage'));
+const ClientBookingFlow = lazy(() => import('./pages/ClientBookingFlow'));
+const ClientAppointmentsPage = lazy(() => import('./pages/ClientAppointmentsPage'));
+const ClientNotificationsPage = lazy(() => import('./pages/ClientNotificationsPage'));
+const ClientePetsPage = lazy(() => import('./pages/ClientePetsPage'));
+const ClientePetFormPage = lazy(() => import('./pages/ClientePetFormPage'));
+const ClientePetDetailPage = lazy(() => import('./pages/ClientePetDetailPage'));
+const ClienteHistoricoPage = lazy(() => import('./pages/ClienteHistoricoPage'));
+const ClienteGaleriaPage = lazy(() => import('./pages/ClienteGaleriaPage'));
+const ClientePerfilPage = lazy(() => import('./pages/ClientePerfilPage'));
+
+// Proteção e layout para Gestão (auth OU dono da empresa com company_token)
+function GestaoLayout() {
   const { isAuthenticated, user } = useAuth();
   const companyToken = localStorage.getItem('company_token');
   const companyRole = localStorage.getItem('company_role');
@@ -59,30 +62,9 @@ function GestaoRoutes() {
     return <Navigate to="/cliente/home" replace />;
   }
 
-  const gestaoRoutes = [
-    { path: '/gestao', element: <Navigate to="/gestao/dashboard" replace /> },
-    { path: '/gestao/dashboard', element: <DashboardPage /> },
-    { path: '/gestao/customers', element: <CustomersPage /> },
-    { path: '/gestao/customers/:id', element: <CustomerDetailPage /> },
-    { path: '/gestao/appointments', element: <AppointmentsPage /> },
-    { path: '/gestao/inventory', element: <InventoryPage /> },
-    { path: '/gestao/pets', element: <AdminPetsPage /> },
-    { path: '/gestao/pets/:id', element: <AdminPetDetailPage /> },
-    { path: '/gestao/pdv', element: <PDVPage /> },
-    { path: '/gestao/finance', element: <FinancePage /> },
-    { path: '/gestao/relatorios', element: <RelatoriosPage /> },
-    { path: '/gestao/codigos', element: <CompanyInvitationCodesPage /> },
-    { path: '/gestao/configuracoes', element: <ConfiguracoesPage /> },
-    { path: '/gestao/*', element: <Navigate to="/gestao/dashboard" replace /> },
-  ];
-
-  const content = useRoutes(gestaoRoutes);
-
   return (
     <AdminProvider>
-      <Layout isCompanyMode={isCompanyOwner}>
-        {content}
-      </Layout>
+      <Layout isCompanyMode={isCompanyOwner} />
     </AdminProvider>
   );
 }
@@ -157,7 +139,8 @@ function ClienteRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
         {/* Rotas pÃºblicas */}
         <Route path="/" element={<HomePage />} />
         <Route path="/cadastro-empresa" element={<EmpresaCadastroPage />} />
@@ -173,8 +156,23 @@ function App() {
         <Route path="/cliente/cadastro" element={<ClienteCadastroPage />} />
         <Route path="/gestao/login" element={<GestaoLoginPage />} />
         
-        {/* Rotas protegidas - GestÃ£o */}
-        <Route path="/gestao/*" element={<GestaoRoutes />} />
+        {/* Rotas protegidas - Gestão (aninhadas com Layout + Outlet) */}
+        <Route path="/gestao" element={<GestaoLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="customers/:id" element={<CustomerDetailPage />} />
+          <Route path="appointments" element={<AppointmentsPage />} />
+          <Route path="inventory" element={<InventoryPage />} />
+          <Route path="pets" element={<AdminPetsPage />} />
+          <Route path="pets/:id" element={<AdminPetDetailPage />} />
+          <Route path="pdv" element={<PDVPage />} />
+          <Route path="finance" element={<FinancePage />} />
+          <Route path="relatorios" element={<RelatoriosPage />} />
+          <Route path="codigos" element={<CompanyInvitationCodesPage />} />
+          <Route path="configuracoes" element={<ConfiguracoesPage />} />
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
+        </Route>
         
         {/* Rotas protegidas - Cliente */}
         <Route path="/cliente/*" element={<ClienteRoutes />} />
@@ -187,6 +185,7 @@ function App() {
         {/* Fallback - redirecionar para home */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }

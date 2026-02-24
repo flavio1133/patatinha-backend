@@ -123,25 +123,13 @@ export default function ClienteDashboardPage() {
   const prevImg = () => gallery.length && setGaleriaIndex((i) => (i - 1 + gallery.length) % gallery.length);
 
   return (
-    <div
-      className="cliente-dashboard"
-      style={{
-        minHeight: '100vh',
-        background: '#F9F9F9',
-        padding: '24px 20px 100px',
-        maxWidth: '800px',
-        margin: '0 auto',
-        display: 'block',
-        visibility: 'visible',
-        opacity: 1,
-      }}
-    >
+    <div className="cliente-dashboard">
       {location.state?.message && <p className="welcome-msg">{location.state.message}</p>}
-      <header className="cliente-header" style={{ marginBottom: '24px', display: 'block' }}>
-        <h1 style={{ fontSize: '1.75rem', color: '#212121', marginBottom: '4px', display: 'block' }}>
-          Olá, {firstName}! {company ? `🐾 ${company.name}` : '🐾'}
+      <header className="cliente-dashboard-header">
+        <h1 className="cliente-dashboard-title">
+          Olá, {firstName}! {company ? <span className="cliente-dashboard-company">🐾 {company.name}</span> : '🐾'}
         </h1>
-        <p className="cliente-sub" style={{ fontSize: '0.95rem', color: '#666', display: 'block' }}>
+        <p className="cliente-dashboard-sub">
           Aqui você acompanha seus pets e agendamentos.
         </p>
       </header>
@@ -226,12 +214,7 @@ export default function ClienteDashboardPage() {
           {pets.map((pet) => (
             <Link key={pet.id} to={`/cliente/pets/${pet.id}`} className="pet-card">
               <div
-                className="pet-foto"
-                style={{
-                  background: 'linear-gradient(135deg, #FF6B4A 0%, #FF9F6B 100%)',
-                  color: 'white',
-                  fontSize: '3rem',
-                }}
+                className="pet-foto pet-foto-placeholder"
               >
                 {(pet.species || '').toLowerCase() === 'cat' ? '🐈' : '🐕'}
               </div>
@@ -248,7 +231,7 @@ export default function ClienteDashboardPage() {
       <section className="card historico">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h2 style={{ margin: 0 }}>📋 Últimos serviços</h2>
-          <Link to="/cliente/historico" style={{ fontSize: '0.9rem', color: '#FF6B4A', fontWeight: 600, textDecoration: 'none' }}>
+          <Link to="/cliente/historico" className="cliente-dashboard-link">
             Ver histórico completo
           </Link>
         </div>
@@ -268,7 +251,7 @@ export default function ClienteDashboardPage() {
         <section className="card galeria">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h2 style={{ margin: 0 }}>📷 Memórias recentes</h2>
-            <Link to="/cliente/galeria" style={{ fontSize: '0.9rem', color: '#FF6B4A', fontWeight: 600, textDecoration: 'none' }}>
+            <Link to="/cliente/galeria" className="cliente-dashboard-link">
               Ver galeria
             </Link>
           </div>
@@ -298,23 +281,7 @@ export default function ClienteDashboardPage() {
         </section>
       )}
 
-      <Link
-        to="/cliente/agendar"
-        className="btn-agendar"
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#FF6B4A',
-          color: 'white',
-          padding: '14px 28px',
-          borderRadius: '28px',
-          fontWeight: '600',
-          textDecoration: 'none',
-          boxShadow: '0 4px 20px rgba(255, 107, 74, 0.4)',
-        }}
-      >
+      <Link to="/cliente/agendar" className="cliente-dashboard-fab">
         Agendar novo serviço
       </Link>
     </div>

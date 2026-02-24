@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companiesAPI } from '../services/api';
 import './ConfiguracoesPage.css';
@@ -24,9 +25,17 @@ const SERVICOS_OPCOES = [
 ];
 
 export default function ConfiguracoesPage() {
-  const [aba, setAba] = useState('disponibilidade');
+  const location = useLocation();
+  const hashTab = location.hash?.replace('#', '') || '';
+  const [aba, setAba] = useState(hashTab || 'disponibilidade');
   const queryClient = useQueryClient();
   const companyId = localStorage.getItem('company_id');
+
+  useEffect(() => {
+    if (hashTab && ['disponibilidade', 'empresa', 'servicos', 'profissionais', 'usuarios', 'integracao', 'assinatura', 'backup', 'perfil'].includes(hashTab)) {
+      setAba(hashTab);
+    }
+  }, [hashTab]);
 
   const { data: companyData } = useQuery({
     queryKey: ['company-settings', companyId],

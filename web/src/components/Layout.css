@@ -264,14 +264,22 @@
   overflow-x: auto;
   background: #121212;
   color: #e4e4e4;
+  display: block;
 }
 
-/* Garantir que o conteúdo interno ocupe espaço */
+/* Garantir que o conteúdo interno ocupe espaço e seja visível */
 .content-area > * {
   min-height: 200px;
+  color: inherit;
+  background: transparent;
 }
 
-/* Mobile */
+/* Floating Tab Bar - APENAS mobile (gestão) */
+.layout-floating-bar {
+  display: none;
+}
+
+/* Mobile - Floating Tab Bar (pílula flutuante) */
 @media (max-width: 768px) {
   .layout {
     flex-direction: column;
@@ -305,6 +313,81 @@
     display: block;
   }
 
+  /* Floating Tab Bar - pílula na parte inferior */
+  .layout-floating-bar {
+    display: flex;
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 95;
+    background: rgba(30, 30, 30, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 9999px;
+    padding: 8px 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 4px;
+    align-items: center;
+  }
+
+  .layout-floating-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    text-decoration: none;
+    color: #9ca3af;
+    font-size: 0.65rem;
+    font-weight: 500;
+    border-radius: 9999px;
+    transition: color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .layout-floating-link:active {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .layout-floating-link.active {
+    color: #a5d6a7;
+  }
+
+  .layout-floating-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .layout-floating-label {
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+
+  /* Botão Agendar em destaque - círculo maior e cor vibrante */
+  .layout-floating-link.highlight {
+    background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    color: white;
+    padding: 14px 18px;
+  }
+
+  .layout-floating-link.highlight .layout-floating-icon {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+  }
+
+  .layout-floating-link.highlight .layout-floating-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  .layout-floating-link.highlight.active {
+    color: white;
+    box-shadow: 0 0 0 2px rgba(102, 187, 106, 0.5);
+  }
+
   .main-content {
     flex: 1;
     min-height: 0;
@@ -329,12 +412,19 @@
   .content-area {
     flex: 1;
     min-height: 0;
-    padding: 16px 20px;
+    padding: 16px 20px 100px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .content-area > * {
     min-height: 180px;
+  }
+}
+
+/* Desktop: ocultar floating bar */
+@media (min-width: 769px) {
+  .layout-floating-bar {
+    display: none !important;
   }
 }
