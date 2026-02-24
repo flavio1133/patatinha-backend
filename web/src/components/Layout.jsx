@@ -165,7 +165,7 @@ export default function Layout({ children, isCompanyMode }) {
             </div>
           </div>
         </header>
-        <div className="content-area" key={location.pathname}>{children}</div>
+        <div className="content-area">{children}</div>
       </main>
     </div>
   );

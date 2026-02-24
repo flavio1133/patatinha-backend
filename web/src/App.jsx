@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useRoutes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import HomePage from './pages/HomePage';
 import EmpresaCadastroPage from './pages/EmpresaCadastroPage';
@@ -45,6 +45,7 @@ import { BookingProvider } from './contexts/BookingContext';
 
 // Rotas protegidas para Gestão (auth OU dono da empresa com company_token)
 function GestaoRoutes() {
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const companyToken = localStorage.getItem('company_token');
   const companyRole = localStorage.getItem('company_role');
@@ -58,28 +59,32 @@ function GestaoRoutes() {
     return <Navigate to="/cliente/home" replace />;
   }
 
-  const layout = (
-    <Layout isCompanyMode={isCompanyOwner}>
-      <Routes>
-        <Route path="/gestao" element={<Navigate to="/gestao/dashboard" replace />} />
-        <Route path="/gestao/dashboard" element={<DashboardPage />} />
-        <Route path="/gestao/customers" element={<CustomersPage />} />
-        <Route path="/gestao/customers/:id" element={<CustomerDetailPage />} />
-        <Route path="/gestao/appointments" element={<AppointmentsPage />} />
-        <Route path="/gestao/inventory" element={<InventoryPage />} />
-        <Route path="/gestao/pets" element={<AdminPetsPage />} />
-        <Route path="/gestao/pets/:id" element={<AdminPetDetailPage />} />
-        <Route path="/gestao/pdv" element={<PDVPage />} />
-        <Route path="/gestao/finance" element={<FinancePage />} />
-        <Route path="/gestao/relatorios" element={<RelatoriosPage />} />
-        <Route path="/gestao/codigos" element={<CompanyInvitationCodesPage />} />
-        <Route path="/gestao/configuracoes" element={<ConfiguracoesPage />} />
-        <Route path="/gestao/*" element={<Navigate to="/gestao/dashboard" replace />} />
-      </Routes>
-    </Layout>
-  );
+  const gestaoRoutes = [
+    { path: '/gestao', element: <Navigate to="/gestao/dashboard" replace /> },
+    { path: '/gestao/dashboard', element: <DashboardPage /> },
+    { path: '/gestao/customers', element: <CustomersPage /> },
+    { path: '/gestao/customers/:id', element: <CustomerDetailPage /> },
+    { path: '/gestao/appointments', element: <AppointmentsPage /> },
+    { path: '/gestao/inventory', element: <InventoryPage /> },
+    { path: '/gestao/pets', element: <AdminPetsPage /> },
+    { path: '/gestao/pets/:id', element: <AdminPetDetailPage /> },
+    { path: '/gestao/pdv', element: <PDVPage /> },
+    { path: '/gestao/finance', element: <FinancePage /> },
+    { path: '/gestao/relatorios', element: <RelatoriosPage /> },
+    { path: '/gestao/codigos', element: <CompanyInvitationCodesPage /> },
+    { path: '/gestao/configuracoes', element: <ConfiguracoesPage /> },
+    { path: '/gestao/*', element: <Navigate to="/gestao/dashboard" replace /> },
+  ];
 
-  return <AdminProvider>{layout}</AdminProvider>;
+  const content = useRoutes(gestaoRoutes);
+
+  return (
+    <AdminProvider>
+      <Layout isCompanyMode={isCompanyOwner}>
+        {content}
+      </Layout>
+    </AdminProvider>
+  );
 }
 
 // Rota protegida para Dashboard da Empresa
