@@ -303,8 +303,10 @@ export default function CustomerDetailPage() {
               O cliente será desativado e não aparecerá nas listas ativas. O histórico de serviços e agendamentos será preservado. Apenas Gestor ou Super Administrador pode realizar esta ação.
             </p>
             <div className="form-group">
-              <label>Motivo da desativação *</label>
+              <label htmlFor="customer-deactivate-reason">Motivo da desativação *</label>
               <textarea
+                id="customer-deactivate-reason"
+                name="customer-deactivate-reason"
                 value={deactivateReason}
                 onChange={(e) => setDeactivateReason(e.target.value)}
                 placeholder="Ex.: Erro de cadastro, solicitação do cliente, descarte..."

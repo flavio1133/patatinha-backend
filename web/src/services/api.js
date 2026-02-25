@@ -25,7 +25,6 @@ api.interceptors.request.use(
       url.includes('/register') ||
       url.includes('/validate-cnpj') ||
       url.includes('/validate-invitation-code') ||
-      url.includes('/link-client-to-company') ||
       (url.includes('/companies/') && (url.includes('/availability') || url.endsWith('/public')));
 
     if (isPublic) {

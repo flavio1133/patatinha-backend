@@ -195,6 +195,7 @@ export default function CompanyInvitationCodesPage() {
                 <tr>
                   <th>Código</th>
                   <th>Status</th>
+                  <th>Cliente</th>
                   <th>Data geração</th>
                   <th>Data uso</th>
                   <th>Ações</th>
@@ -204,7 +205,21 @@ export default function CompanyInvitationCodesPage() {
                 {codes.map((c) => (
                   <tr key={c.id}>
                     <td><strong>{c.code}</strong></td>
-                    <td><span className={`status-badge ${statusClass(c.status)}`}>{c.status === 'available' ? 'Disponível' : c.status === 'used' ? 'Usado' : 'Expirado'}</span></td>
+                    <td>
+                      <span className={`status-badge ${statusClass(c.status)}`}>
+                        {c.status === 'available' ? 'Disponível' : c.status === 'used' ? 'Usado' : 'Expirado'}
+                      </span>
+                    </td>
+                    <td>
+                      {c.client_name ? (
+                        <>
+                          <div>{c.client_name}</div>
+                          {c.client_email && <div className="client-email">{c.client_email}</div>}
+                        </>
+                      ) : (
+                        <span className="client-unlinked">—</span>
+                      )}
+                    </td>
                     <td>{new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
                     <td>{c.used_at ? new Date(c.used_at).toLocaleDateString('pt-BR') : '-'}</td>
                     <td>

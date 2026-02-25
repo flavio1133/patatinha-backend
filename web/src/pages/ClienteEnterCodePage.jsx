@@ -82,7 +82,12 @@ export default function ClienteEnterCodePage() {
 
         {!validated ? (
           <form onSubmit={handleValidate} className="code-form">
+            <label htmlFor="client-access-code" className="code-label">
+              Código de acesso
+            </label>
             <input
+              id="client-access-code"
+              name="client-access-code"
               type="text"
               value={code}
               onChange={handleChange}

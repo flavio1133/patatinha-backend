@@ -511,8 +511,10 @@ export default function ProfissionaisSection() {
             <h3>Desativar profissional</h3>
             <p className="form-hint-cargo">O profissional &quot;{deactivateTarget.name}&quot; será desativado e não aparecerá nas listas ativas. O histórico de agendamentos será preservado. Apenas Gestor ou Super Admin pode realizar esta ação.</p>
             <div className="form-group">
-              <label>Motivo da desativação *</label>
+              <label htmlFor="staff-deactivate-reason">Motivo da desativação *</label>
               <textarea
+                id="staff-deactivate-reason"
+                name="staff-deactivate-reason"
                 value={deactivateReason}
                 onChange={(e) => setDeactivateReason(e.target.value)}
                 placeholder="Ex.: Saída da empresa, erro de cadastro..."
