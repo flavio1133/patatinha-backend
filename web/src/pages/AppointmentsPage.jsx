@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, getDay } from 'date-fns';
@@ -193,6 +193,12 @@ export default function AppointmentsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPro, setFilterPro] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (modalOpen) document.body.classList.add('modal-open');
+    else document.body.classList.remove('modal-open');
+    return () => document.body.classList.remove('modal-open');
+  }, [modalOpen]);
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const { data, isLoading, isError, refetch } = useQuery({

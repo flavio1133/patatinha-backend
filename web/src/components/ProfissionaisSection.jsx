@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { professionalsAPI } from '../services/api';
 import './ProfissionaisSection.css';
@@ -66,6 +66,17 @@ export default function ProfissionaisSection() {
   const [staffCredentials, setStaffCredentials] = useState(null);
   const [deactivateTarget, setDeactivateTarget] = useState(null);
   const [deactivateReason, setDeactivateReason] = useState('');
+
+  const isModalOpen = staffModalOpen || !!deactivateTarget;
+
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    return () => document.body.classList.remove('modal-open');
+  }, [isModalOpen]);
 
   const staffMutation = useMutation({
     mutationFn: (payload) => {

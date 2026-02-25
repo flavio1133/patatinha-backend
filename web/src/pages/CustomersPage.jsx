@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersAPI, petsAPI } from '../services/api';
@@ -20,6 +20,12 @@ export default function CustomersPage() {
     petSpecies: 'dog',
     petAge: '',
   });
+
+  useEffect(() => {
+    if (modalOpen) document.body.classList.add('modal-open');
+    else document.body.classList.remove('modal-open');
+    return () => document.body.classList.remove('modal-open');
+  }, [modalOpen]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['customers', search],

@@ -154,22 +154,15 @@
   background: #e55a3a;
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
+/* .modal-overlay: base global em index.css */
 .modal-content {
   background: white;
   padding: 32px;
   border-radius: 16px;
   max-width: 400px;
-  width: 90%;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-content h3 {

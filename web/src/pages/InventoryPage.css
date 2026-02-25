@@ -70,14 +70,16 @@
 }
 .page-header .btn-primary:hover { background: #388e3c; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+/* .modal-overlay: base global em index.css */
 .modal-content {
   background: #1e1e1e;
   border: 1px solid #333;
   padding: 24px;
   border-radius: 16px;
   max-width: 400px;
-  width: 90%;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .modal-content.modal-new-product {
   max-width: 520px;

@@ -137,14 +137,16 @@
 .month-dots { color: #66bb6a; font-size: 20px; }
 .appointment-actions { display: flex; gap: 4px; }
 .btn-icon { width: 32px; height: 32px; border: none; background: #2e7d32; color: white; border-radius: 8px; cursor: pointer; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+/* .modal-overlay: base global em index.css (z-index e centralização) */
 .modal-content {
   background: #1e1e1e;
   border: 1px solid #333;
   padding: 24px;
   border-radius: 16px;
   max-width: 400px;
-  width: 90%;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 .modal-content.modal-new-appointment { max-width: 440px; }
 .modal-new-appointment .form-group { margin-bottom: 16px; }

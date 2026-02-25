@@ -173,32 +173,19 @@
 .staff-credentials-hint p { margin: 0 0 4px 0; }
 .staff-credentials-hint p:last-child { margin-bottom: 0; }
 
-/* Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 16px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
+/* Modal Novo profissional / Editar – usa base global .modal-overlay (index.css) */
 .modal-content.modal-staff {
   width: 100%;
   max-width: 520px;
   max-height: min(calc(100vh - 32px), 90vh);
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-  margin: auto;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
 }
 
 .modal-content.modal-staff h3 {
@@ -444,10 +431,11 @@
   }
   .modal-overlay {
     padding: 12px;
-    align-items: flex-start;
+    align-items: center;
   }
   .modal-content.modal-staff {
-    max-height: min(calc(100vh - 24px), 95vh);
+    max-height: min(calc(100vh - 24px), 92vh);
+    width: 100%;
   }
   .modal-content.modal-staff h3 {
     padding: 20px 20px 12px;
