@@ -55,7 +55,7 @@ export default function ClienteDashboardPage() {
   const upcomingAppointments = useMemo(() => {
     return apiAppointments
       .filter((a) => a.status !== 'cancelled' && a.date >= today)
-      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+      .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))
       .map((a) => {
         const pet = petsMap[a.petId];
         const dateLabel = a.date === today ? 'Hoje' : new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -65,7 +65,7 @@ export default function ClienteDashboardPage() {
           service: SERVICE_LABEL[a.service] || a.service,
           date: dateLabel,
           dateRaw: a.date,
-          time: a.time,
+          time: a.time || null,
           status: STATUS_LABEL[a.status] || a.status,
         };
       });
@@ -90,7 +90,7 @@ export default function ClienteDashboardPage() {
   const historyItems = useMemo(() => {
     return apiAppointments
       .filter((a) => a.status === 'completed' || a.date < today)
-      .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+      .sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')))
       .slice(0, 10)
       .map((a) => ({
         id: a.id,
@@ -133,11 +133,13 @@ export default function ClienteDashboardPage() {
         <section className="card proximo-agendamento">
           <h2>Próximo agendamento</h2>
           <div className="agendamento-content">
-            <div className="agendamento-pet">{nextAppointment.petName}</div>
-            <div className="agendamento-service">{nextAppointment.service}</div>
-            <div className="agendamento-datetime">
-              {nextAppointment.date} às {nextAppointment.time}
-            </div>
+          <div className="agendamento-pet">{nextAppointment.petName}</div>
+          <div className="agendamento-service">{nextAppointment.service}</div>
+          <div className="agendamento-datetime">
+            {nextAppointment.time
+              ? `${nextAppointment.date} às ${nextAppointment.time}`
+              : nextAppointment.date}
+          </div>
             <span className="agendamento-status">{nextAppointment.status}</span>
           </div>
           <Link to="/cliente/agendamentos" className="ui-btn ui-btn-primary btn-ver-detalhes">
@@ -155,7 +157,7 @@ export default function ClienteDashboardPage() {
           <ul className="today-list">
             {todayAppointments.map((a) => (
               <li key={a.id} className={'today-item status-' + (a.status || '')}>
-                <span className="today-time">{a.time}</span>
+                <span className="today-time">{a.time || '--:--'}</span>
                 <span className="today-pet">{a.petName}</span>
                 <span className="today-service">{a.service}</span>
                 <span className="today-status">{a.statusLabel}</span>

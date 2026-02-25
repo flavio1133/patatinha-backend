@@ -188,3 +188,39 @@ body.modal-open {
   background: #b91c1c;
 }
 
+:root {
+  /* Cores base */
+  --color-bg-page: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f4f6;
+  --color-border-subtle: rgba(15, 23, 42, 0.06);
+
+  /* Tipografia */
+  --color-text-main: #0f172a;
+  --color-text-muted: #6b7280;
+  --color-text-inverse: #f9fafb;
+
+  /* Marcas (gestão = verde escuro, cliente = laranja escuro) */
+  --color-brand-gestao: #2e7d32;
+  --color-brand-gestao-soft: rgba(46, 125, 50, 0.12);
+
+  --color-brand-cliente: #c2410c;
+  --color-brand-cliente-soft: rgba(194, 65, 12, 0.12);
+
+  /* Feedback */
+  --color-danger: #dc2626;
+  --color-danger-soft: rgba(220, 38, 38, 0.12);
+
+  /* Raios / sombras */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-elevated: 0 8px 24px rgba(15, 23, 42, 0.18);
+
+  /* Modais: sempre acima da sidebar e do conteúdo */
+  --modal-z-index: 9999;
+  --modal-backdrop: rgba(0, 0, 0, 0.82);
+}

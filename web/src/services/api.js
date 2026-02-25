@@ -74,7 +74,7 @@ api.interceptors.response.use(
       });
     }
 
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
       const path = window.location.pathname;
       const isCompany = path.startsWith('/company');
       const isGestao = path.startsWith('/gestao');

@@ -38,12 +38,16 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      console.log('🔐 Tentando fazer login com:', email);
+      if (import.meta.env.DEV) {
+        console.log('🔐 Tentando fazer login com:', email);
+      }
       const response = await authAPI.login(email, password);
-      
-      console.log('📦 Resposta completa:', response);
-      console.log('📦 response.data:', response.data);
-      
+
+      if (import.meta.env.DEV) {
+        console.log('📦 Resposta completa:', response);
+        console.log('📦 response.data:', response.data);
+      }
+
       // A API retorna: { message, token, user }
       const token = response.data?.token;
       const user = response.data?.user;
@@ -55,27 +59,30 @@ export function AuthProvider({ children }) {
           error: 'Token não recebido do servidor. Verifique o console para mais detalhes.',
         };
       }
-      
-      console.log('✅ Token recebido:', token.substring(0, 20) + '...');
-      console.log('✅ Usuário:', user);
-      console.log('✅ Role:', user?.role);
-      
+
+      if (import.meta.env.DEV) {
+        console.log('✅ Token recebido:', token.substring(0, 20) + '...');
+        console.log('✅ Usuário:', user);
+        console.log('✅ Role:', user?.role);
+      }
       localStorage.setItem('auth_token', token);
       setUser(user);
       return { success: true, user }; // Retornar user também para redirecionamento
     } catch (error) {
-      // Log detalhado do erro para debug
-      console.error('❌ Erro no login:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          baseURL: error.config?.baseURL,
-        },
-      });
+      // Log detalhado do erro para debug (apenas em desenvolvimento)
+      if (import.meta.env.DEV) {
+        console.error('❌ Erro no login:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            baseURL: error.config?.baseURL,
+          },
+        });
+      }
       
       // Mensagens de erro mais específicas
       let errorMessage = 'Erro ao fazer login';

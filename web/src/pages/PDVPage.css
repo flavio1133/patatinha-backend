@@ -59,3 +59,9 @@
 .pdv-subtotal { font-size: 1.125rem; margin-bottom: 14px; color: #f0f0f0; font-weight: 600; }
 .btn-finalize { padding: 14px; background: #2e7d32; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; }
 .btn-finalize:hover { background: #388e3c; }
+
+@media (max-width: 900px) {
+  .pdv-layout {
+    grid-template-columns: 1fr;
+  }
+}
