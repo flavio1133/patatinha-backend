@@ -65,6 +65,7 @@ export default function ClientAppointmentsPage() {
           petName: petsMap[a.petId]?.name || 'Pet',
           serviceLabel: SERVICE_LABEL[a.service] || a.service,
           statusLabel: STATUS_LABEL[a.status] || a.status,
+          professionalName: a.professionalName || 'A definir',
         })),
     [appointments, petsMap, today]
   );
@@ -80,6 +81,7 @@ export default function ClientAppointmentsPage() {
           petName: petsMap[a.petId]?.name || 'Pet',
           serviceLabel: SERVICE_LABEL[a.service] || a.service,
           statusLabel: STATUS_LABEL[a.status] || a.status,
+          professionalName: a.professionalName || 'A definir',
         })),
     [appointments, petsMap, today]
   );
@@ -109,11 +111,12 @@ export default function ClientAppointmentsPage() {
             {upcoming.map((a) => (
               <li key={a.id} className="client-appointments-item upcoming">
                 <div className="appointment-info">
+                  <span className="appointment-datetime appointment-time-block">
+                    {a.date === today ? 'Hoje' : new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR')} às <strong>{a.time}</strong>
+                  </span>
                   <span className="appointment-pet">{a.petName}</span>
                   <span className="appointment-service">{a.serviceLabel}</span>
-                  <span className="appointment-datetime">
-                    {a.date === today ? 'Hoje' : new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {a.time}
-                  </span>
+                  <span className="appointment-professional">👤 {a.professionalName}</span>
                   <span className={'appointment-status status-' + a.status}>{a.statusLabel}</span>
                 </div>
                 <button
@@ -146,11 +149,12 @@ export default function ClientAppointmentsPage() {
                 key={a.id}
                 className={'client-appointments-item past' + (a.status === 'cancelled' ? ' cancelled' : '')}
               >
+                <span className="appointment-datetime">
+                  {new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR')} <strong>{a.time}</strong>
+                </span>
                 <span className="appointment-pet">{a.petName}</span>
                 <span className="appointment-service">{a.serviceLabel}</span>
-                <span className="appointment-datetime">
-                  {new Date(a.date + 'T12:00:00').toLocaleDateString('pt-BR')} {a.time}
-                </span>
+                <span className="appointment-professional">👤 {a.professionalName}</span>
                 <span className={'appointment-status status-' + a.status}>{a.statusLabel}</span>
               </li>
             ))}

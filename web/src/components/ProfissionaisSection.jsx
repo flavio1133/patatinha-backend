@@ -20,6 +20,23 @@ const CARGOS_ATENDIMENTO = [
 const CARGOS_ALL = [...CARGOS_OPERACIONAL, ...CARGOS_ATENDIMENTO];
 const CARGO_LABEL = Object.fromEntries(CARGOS_ALL.map((c) => [c.id, c.label]));
 
+const DIAS_SEMANA = [
+  { key: 'monday', label: 'Seg' },
+  { key: 'tuesday', label: 'Ter' },
+  { key: 'wednesday', label: 'Qua' },
+  { key: 'thursday', label: 'Qui' },
+  { key: 'friday', label: 'Sex' },
+  { key: 'saturday', label: 'Sáb' },
+  { key: 'sunday', label: 'Dom' },
+];
+
+const defaultWorkSchedule = () => ({
+  start: '08:00',
+  end: '18:00',
+  lunchStart: '12:00',
+  lunchEnd: '13:00',
+});
+
 const emptyStaffForm = () => ({
   name: '',
   email: '',
@@ -31,6 +48,8 @@ const emptyStaffForm = () => ({
   canEditAgenda: true,
   canEditInventory: false,
   canViewFinance: false,
+  workSchedule: defaultWorkSchedule(),
+  daysOff: [],
 });
 
 export default function ProfissionaisSection() {
@@ -91,6 +110,7 @@ export default function ProfissionaisSection() {
   const openEditStaff = (p) => {
     setEditingStaff(p);
     setStaffCredentials(null);
+    const ws = p.workSchedule || defaultWorkSchedule();
     setStaffForm({
       name: p.name || '',
       email: p.email || '',
@@ -102,6 +122,13 @@ export default function ProfissionaisSection() {
       canEditAgenda: p.permissions?.canEditAgenda ?? true,
       canEditInventory: p.permissions?.canEditInventory ?? false,
       canViewFinance: p.permissions?.canViewFinance ?? false,
+      workSchedule: {
+        start: ws.start || '08:00',
+        end: ws.end || '18:00',
+        lunchStart: ws.lunchStart || '12:00',
+        lunchEnd: ws.lunchEnd || '13:00',
+      },
+      daysOff: Array.isArray(p.daysOff) ? [...p.daysOff] : [],
     });
     setStaffModalOpen(true);
   };
@@ -132,8 +159,30 @@ export default function ProfissionaisSection() {
         canEditInventory: !!staffForm.canEditInventory,
         canViewFinance: !!staffForm.canViewFinance,
       },
+      workSchedule: staffForm.workSchedule || defaultWorkSchedule(),
+      daysOff: Array.isArray(staffForm.daysOff) ? staffForm.daysOff : [],
     };
     staffMutation.mutate(payload);
+  };
+
+  const toggleDayOff = (dayKey) => {
+    setStaffForm((f) => ({
+      ...f,
+      daysOff: f.daysOff.includes(dayKey)
+        ? f.daysOff.filter((d) => d !== dayKey)
+        : [...f.daysOff, dayKey],
+    }));
+  };
+
+  const formatAvailabilitySummary = (p) => {
+    const ws = p.workSchedule || defaultWorkSchedule();
+    const daysOff = Array.isArray(p.daysOff) ? p.daysOff : [];
+    const workingDays = DIAS_SEMANA.filter((d) => !daysOff.includes(d.key));
+    if (workingDays.length === 0) return 'Sem dias configurados';
+    const first = workingDays[0].label;
+    const last = workingDays[workingDays.length - 1].label;
+    const range = workingDays.length === 7 ? 'Todos' : workingDays.length === 1 ? first : `${first}–${last}`;
+    return `${range} ${ws.start}–${ws.end}` + (ws.lunchStart && ws.lunchEnd ? ` (almoço ${ws.lunchStart}–${ws.lunchEnd})` : '');
   };
 
   return (
@@ -181,6 +230,9 @@ export default function ProfissionaisSection() {
                   {p.specialties?.length > 0 && rolesList.length === 0 && (
                     <p className="staff-specialties">{p.specialties.join(', ')}</p>
                   )}
+                  <p className="staff-availability-summary" title="Dias e horários disponíveis para agendamento">
+                    📅 {formatAvailabilitySummary(p)}
+                  </p>
                 </div>
               </div>
               <div className="staff-actions">
@@ -319,6 +371,69 @@ export default function ProfissionaisSection() {
                   />
                   <span>Profissional ativo</span>
                 </label>
+              </div>
+              <div className="form-group availability-group">
+                <h4>📅 Agenda de disponibilidade</h4>
+                <p className="form-hint-cargo">Dias e horários em que este profissional atende. O cliente verá esses horários ao agendar. Pode ser preenchido pelo gestor ou pelo próprio funcionário (se tiver permissão).</p>
+                <div className="availability-days">
+                  <span className="availability-days-label">Atende nos dias:</span>
+                  {DIAS_SEMANA.map((d) => (
+                    <label key={d.key} className="availability-day-check">
+                      <input
+                        type="checkbox"
+                        checked={!staffForm.daysOff.includes(d.key)}
+                        onChange={() => toggleDayOff(d.key)}
+                      />
+                      <span>{d.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="availability-times">
+                  <label>
+                    <span>Entrada</span>
+                    <input
+                      type="time"
+                      value={staffForm.workSchedule?.start || '08:00'}
+                      onChange={(e) => setStaffForm((f) => ({
+                        ...f,
+                        workSchedule: { ...(f.workSchedule || defaultWorkSchedule()), start: e.target.value },
+                      }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Saída</span>
+                    <input
+                      type="time"
+                      value={staffForm.workSchedule?.end || '18:00'}
+                      onChange={(e) => setStaffForm((f) => ({
+                        ...f,
+                        workSchedule: { ...(f.workSchedule || defaultWorkSchedule()), end: e.target.value },
+                      }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Almoço início</span>
+                    <input
+                      type="time"
+                      value={staffForm.workSchedule?.lunchStart || '12:00'}
+                      onChange={(e) => setStaffForm((f) => ({
+                        ...f,
+                        workSchedule: { ...(f.workSchedule || defaultWorkSchedule()), lunchStart: e.target.value },
+                      }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Almoço fim</span>
+                    <input
+                      type="time"
+                      value={staffForm.workSchedule?.lunchEnd || '13:00'}
+                      onChange={(e) => setStaffForm((f) => ({
+                        ...f,
+                        workSchedule: { ...(f.workSchedule || defaultWorkSchedule()), lunchEnd: e.target.value },
+                      }))}
+                    />
+                  </label>
+                </div>
               </div>
               <div className="form-group permissions-group">
                 <h4>Permissões no sistema</h4>

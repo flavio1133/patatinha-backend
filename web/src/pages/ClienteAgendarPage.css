@@ -173,6 +173,11 @@
 }
 .slot-btn:hover { border-color: #FF6B4A; background: #fff5f2; }
 .slot-btn.selected { border-color: #FF6B4A; background: #FF6B4A; color: white; }
+.form-group-professional { margin-bottom: 20px; }
+.form-group-professional select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; }
+.form-hint { margin: 6px 0 0 0; font-size: 0.85rem; color: #666; }
+.slots-professional-hint { font-weight: 400; color: #666; font-size: 0.9rem; }
+
 .btn-agendar-submit { margin-top: 16px; padding: 14px; background: #FF6B4A; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; max-width: 320px; }
 .btn-agendar-submit:hover:not(:disabled) { background: #e55a3a; }
 .btn-agendar-submit:disabled { opacity: 0.6; cursor: not-allowed; }

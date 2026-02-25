@@ -29,6 +29,7 @@ export default function ClienteAgendarPage() {
   const queryClient = useQueryClient();
   const [petId, setPetId] = useState('');
   const [service, setService] = useState('banho_tosa');
+  const [professionalId, setProfessionalId] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
@@ -63,10 +64,18 @@ export default function ClienteAgendarPage() {
 
   const pets = petsData?.pets || [];
   const availability = availabilityData?.availability || [];
+  const availabilityFiltered = useMemo(() => {
+    if (!professionalId) return availability;
+    return availability.filter((a) => String(a.professionalId) === String(professionalId));
+  }, [availability, professionalId]);
   const allSlots = useMemo(() => {
     const set = new Set();
-    availability.forEach((a) => (a.availableSlots || []).forEach((t) => set.add(t)));
+    availabilityFiltered.forEach((a) => (a.availableSlots || []).forEach((t) => set.add(t)));
     return Array.from(set).sort();
+  }, [availabilityFiltered]);
+  const professionalOptions = useMemo(() => {
+    if (!availability.length) return [];
+    return availability.map((a) => ({ id: a.professionalId, name: a.professionalName || 'Profissional' }));
   }, [availability]);
 
   const handleSubmit = (e) => {
@@ -81,6 +90,7 @@ export default function ClienteAgendarPage() {
       date: selectedDate,
       time,
       notes: notes.trim() || undefined,
+      professionalId: professionalId ? parseInt(professionalId, 10) : undefined,
     });
   };
 
@@ -124,11 +134,27 @@ export default function ClienteAgendarPage() {
             </div>
             <div className="form-group">
               <label>Servico *</label>
-              <select value={service} onChange={(e) => { setService(e.target.value); setSelectedDate(''); setTime(''); }} required>
+              <select value={service} onChange={(e) => { setService(e.target.value); setSelectedDate(''); setTime(''); setProfessionalId(''); }} required>
                 {SERVICOS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>
+
+          {selectedDate && availability.length > 0 && (
+            <div className="form-group form-group-professional">
+              <label>Profissional (opcional)</label>
+              <select
+                value={professionalId}
+                onChange={(e) => { setProfessionalId(e.target.value); setTime(''); }}
+              >
+                <option value="">Qualquer disponivel</option>
+                {professionalOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+                ))}
+              </select>
+              <p className="form-hint">Escolha quem vai atender ou deixe em &quot;Qualquer disponivel&quot;.</p>
+            </div>
+          )}
 
           <div className="calendar-section">
             <label>Data *</label>
@@ -155,11 +181,17 @@ export default function ClienteAgendarPage() {
 
           {selectedDate && (
             <div className="slots-section">
-              <label>Horarios disponiveis *</label>
+              <label>Horarios disponiveis * {professionalId && professionalOptions.find((o) => String(o.id) === String(professionalId)) && (
+                <span className="slots-professional-hint">(conforme agenda do profissional)</span>
+              )}</label>
               {loadingSlots ? (
                 <p className="slots-loading">Carregando horarios...</p>
               ) : allSlots.length === 0 ? (
-                <p className="slots-empty">Nenhum horario disponivel nesta data. Escolha outra.</p>
+                <p className="slots-empty">
+                  {professionalId
+                    ? 'Nenhum horario disponivel para este profissional nesta data. Tente outro dia ou outro profissional.'
+                    : 'Nenhum horario disponivel nesta data. Escolha outra.'}
+                </p>
               ) : (
                 <div className="slots-grid">
                   {allSlots.map((t) => (

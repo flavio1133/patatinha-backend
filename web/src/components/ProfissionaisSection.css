@@ -113,6 +113,12 @@
   color: #d1d5db;
 }
 
+.staff-availability-summary {
+  margin: 8px 0 0 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
 .staff-actions {
   display: flex;
   flex-wrap: wrap;
@@ -328,6 +334,68 @@
   gap: 8px;
   font-size: 0.9rem;
   color: #d1d5db;
+}
+
+.availability-group {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.availability-group h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: #e4e4e4;
+}
+
+.availability-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.availability-days-label {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin-right: 4px;
+}
+
+.availability-day-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #d1d5db;
+}
+
+.availability-day-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.availability-times {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.availability-times label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.availability-times input[type="time"] {
+  padding: 8px 12px;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  background: #252525;
+  color: #e4e4e4;
+  font-size: 14px;
 }
 
 .permissions-group {

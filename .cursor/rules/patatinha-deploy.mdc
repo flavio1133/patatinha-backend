@@ -1,13 +1,13 @@
 ---
-description: Fluxo padrão para alterações no Patatinha (build, deploy, git)
+description: Fluxo padrão para alterações no Patatinha (alterar → mostrar mudanças → build e deploy)
 alwaysApply: true
 ---
 
 # Fluxo Patatinha – alterações no código
 
-Ao pedir alteração no Patatinha:
+A partir de agora, quando o usuário pedir uma alteração no Patatinha, o fluxo será:
 
-1. **Fazer** a alteração solicitada.
+1. **Fazer a alteração** solicitada.
 2. **Mostrar só o que mudou** (resumo das mudanças / trechos alterados).
 3. **Perguntar:** "Pronto para build e deploy?"
 
@@ -16,16 +16,16 @@ Ao pedir alteração no Patatinha:
 Executar, nesta ordem:
 
 **a) Build do frontend**  
-No Windows/PowerShell: `Set-Location web; npm run build; ...` (ajustar comando para PowerShell quando for rodar).
+No Windows/PowerShell usar comandos compatíveis: `Set-Location web; npm run build; Set-Location ..` (evitar `&&`; usar `;` no PowerShell).
 
-**b) Deploy**  
-Na raiz do projeto: `npx firebase deploy`.
+**b) Deploy do frontend**  
+Na raiz do projeto: `npx firebase deploy --only hosting` (ou `firebase deploy --only hosting`).
 
-**c) Git** (somente se houver remote)  
-`git add` + `commit` + `push`.
+**c) Git** (somente se houver remote configurado)  
+`git add .` + `git commit -m "..."` + `git push`.
 
 **d) Confirmação**  
-Responder com o link do site **clicável**: https://patatinha-petshop.web.app
+Enviar confirmação com o **link do site clicável**: https://patatinha-petshop.web.app
 
 ## Se houver erro
 
@@ -33,4 +33,4 @@ Mostrar o erro, sugerir correção e, após corrigir, executar o fluxo novamente
 
 ## Estilo
 
-Objetividade: mostrar apenas o que mudou, comandos exatos (PowerShell quando no Windows), confirmação com link clicável.
+Objetividade: mostrar apenas o que mudou; comandos ajustados para PowerShell no Windows; confirmação final com link clicável.
