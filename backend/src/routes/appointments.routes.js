@@ -14,53 +14,28 @@ const {
   timeToMinutes,
   minutesToTime,
 } = require('../services/business-rules.service');
+const { Appointment, ClientCompany } = require('../db');
 
-// TODO: Implementar conexão com banco de dados
+// Cache em memória para manter compatibilidade com demais módulos
 const appointments = [];
-const appointmentsState = { appointmentIdCounter: 1 };
 
-// Agendamentos fictícios para a Kiara (cliente@teste.com / Patatinha Recife)
-// Vários dias para evitar problema de fuso (servidor UTC x data local do usuário)
-function seedDemoAppointments() {
-  const pro = require('./professionals.routes').professionals || [];
-  if (pro.length === 0) return;
-  const SERVICE_DURATIONS_SEED = { banho: 60, tosa: 90, banho_tosa: 120, veterinario: 30, hotel: 60, outros: 60 };
-  const base = new Date();
-  const formatDate = (d) => d.toISOString().split('T')[0];
-  const demos = [];
-  for (let offset = -1; offset <= 4; offset++) {
-    const d = new Date(base);
-    d.setDate(d.getDate() + offset);
-    const dateStr = formatDate(d);
-    demos.push({ date: dateStr, time: '09:00', service: 'banho', professionalIndex: 0, status: offset < 0 ? 'completed' : 'confirmed' });
-    demos.push({ date: dateStr, time: '11:00', service: 'tosa', professionalIndex: 1, status: 'confirmed' });
-    if (offset <= 2) demos.push({ date: dateStr, time: '14:00', service: 'banho_tosa', professionalIndex: 0, status: 'confirmed' });
-  }
-  demos.forEach((d) => {
-    const professionalId = pro[d.professionalIndex]?.id ?? pro[0].id;
-    const service = d.service;
-    const duration = SERVICE_DURATIONS_SEED[service] || 60;
-    appointments.push({
-      id: appointmentsState.appointmentIdCounter++,
-      userId: 5,
-      customerId: 1,
-      companyId: 'comp_1',
-      petId: 1,
-      professionalId,
-      service,
-      date: d.date,
-      time: d.time,
-      duration,
-      notes: null,
-      status: d.status,
-      checkInTime: null,
-      checkOutTime: null,
-      estimatedCompletionTime: null,
-      createdAt: new Date(),
+async function hydrateAppointmentsFromDatabase() {
+  try {
+    const rows = await Appointment.findAll({ order: [['id', 'ASC']] });
+    appointments.length = 0;
+    rows.forEach((row) => {
+      const plain = row.get({ plain: true });
+      appointments.push({
+        ...plain,
+        createdAt: plain.createdAt || plain.created_at,
+      });
     });
-  });
+  } catch (err) {
+    console.error('Erro ao carregar agendamentos do banco:', err.message);
+  }
 }
-seedDemoAppointments();
+
+hydrateAppointmentsFromDatabase();
 
 // Duração padrão dos serviços (em minutos)
 const SERVICE_DURATIONS = {
@@ -184,7 +159,7 @@ router.post('/', [
   body('date').notEmpty().withMessage('Data é obrigatória'),
   body('time').notEmpty().withMessage('Horário é obrigatório'),
   validate
-], (req, res) => {
+], async (req, res) => {
   const { petId, service, date, time, notes, professionalId, customerId, userId: bodyUserId, companyId: bodyCompanyId } = req.body;
 
   // Quando a gestão agenda em nome do cliente: usar userId do cliente para ele ver na área do cliente
@@ -199,6 +174,21 @@ router.post('/', [
 
   // companyId: gestão usa req.companyId; cliente envia no body ao agendar por unidade
   const companyId = req.companyId || bodyCompanyId || null;
+
+  // Se for cliente (app) agendando para uma empresa específica, garantir que exista vínculo persistente
+  if (!req.companyId && userId && companyId) {
+    try {
+      const link = await ClientCompany.findOne({
+        where: { client_id: userId, company_id: companyId, is_active: true },
+      });
+      if (!link) {
+        return res.status(403).json({ error: 'Cliente não está vinculado a esta empresa' });
+      }
+    } catch (err) {
+      console.error('Erro ao verificar vínculo cliente-empresa antes do agendamento:', err.message);
+      return res.status(500).json({ error: 'Erro ao validar vínculo com a empresa' });
+    }
+  }
 
   // Alocar profissional automaticamente se não especificado
   let assignedProfessionalId = professionalId;
@@ -236,8 +226,7 @@ router.post('/', [
 
   const duration = SERVICE_DURATIONS[service] || 60;
 
-  const newAppointment = {
-    id: appointmentsState.appointmentIdCounter++,
+  const newAppointmentData = {
     userId,
     customerId: customerId ? parseInt(customerId) : null,
     companyId: companyId || null,
@@ -248,14 +237,19 @@ router.post('/', [
     time,
     duration,
     notes: notes || null,
-    status: 'confirmed', // confirmed, checked_in, in_progress, completed, cancelled
+    status: 'confirmed',
     checkInTime: null,
     checkOutTime: null,
     estimatedCompletionTime: null,
-    createdAt: new Date(),
   };
 
-  appointments.push(newAppointment);
+  const created = await Appointment.create(newAppointmentData);
+  const newAppointment = created.get({ plain: true });
+
+  appointments.push({
+    ...newAppointment,
+    createdAt: new Date(),
+  });
 
   // TODO: Enviar notificação de confirmação
 
@@ -384,7 +378,7 @@ router.post('/:id/check-out', authenticateToken, (req, res) => {
 });
 
 // Atualizar agendamento
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   const appointment = appointments.find(a => a.id === parseInt(req.params.id));
 
   if (!appointment) {
@@ -412,11 +406,24 @@ router.put('/:id', authenticateToken, (req, res) => {
     }
   }
 
-  appointments[appointmentIndex] = {
+  const updated = {
     ...appointments[appointmentIndex],
     ...req.body,
     updatedAt: new Date(),
   };
+
+  await Appointment.update(
+    {
+      date: updated.date,
+      time: updated.time,
+      notes: updated.notes,
+      professionalId: updated.professionalId,
+      status: updated.status,
+    },
+    { where: { id: updated.id } },
+  );
+
+  appointments[appointmentIndex] = updated;
 
   res.json({
     message: 'Agendamento atualizado com sucesso',
@@ -425,7 +432,7 @@ router.put('/:id', authenticateToken, (req, res) => {
 });
 
 // Cancelar agendamento (cliente ou Pet Shop), com justificativa obrigatória
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   const appointment = appointments.find(a => a.id === parseInt(req.params.id));
 
   if (!appointment) {
@@ -466,6 +473,17 @@ router.delete('/:id', authenticateToken, (req, res) => {
   appointments[appointmentIndex].cancelled_at = new Date();
   appointments[appointmentIndex].cancellationFee = cancelCheck.canChargeFee ? cancelCheck.feePercentage : 0;
   appointments[appointmentIndex].cancelledAt = new Date();
+
+  await Appointment.update(
+    {
+      status: 'cancelled',
+      cancellation_reason: appointments[appointmentIndex].cancellation_reason,
+      cancelled_by: appointments[appointmentIndex].cancelled_by,
+      cancelled_at: appointments[appointmentIndex].cancelled_at,
+      cancellationFee: appointments[appointmentIndex].cancellationFee,
+    },
+    { where: { id: appointments[appointmentIndex].id } },
+  );
 
   res.json({
     message: 'Agendamento cancelado com sucesso',
@@ -674,4 +692,3 @@ function getAppointmentsByProfessionalAndDate(professionalId, date) {
 module.exports = router;
 module.exports.getAppointmentsByProfessionalAndDate = getAppointmentsByProfessionalAndDate;
 module.exports.appointments = appointments;
-module.exports.appointmentsState = appointmentsState;

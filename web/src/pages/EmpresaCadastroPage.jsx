@@ -62,6 +62,9 @@ export default function EmpresaCadastroPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [cnpjStatus, setCnpjStatus] = useState({ valid: null, message: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [step2Error, setStep2Error] = useState('');
   const [form, setForm] = useState({
     person_type: 'pj',
     name: '',
@@ -139,6 +142,19 @@ export default function EmpresaCadastroPage() {
   const passwordsMatch = form.password === form.confirmPassword && form.password.length >= 6;
   const canStep2 = form.email && form.phone && form.address && form.address_number && form.neighborhood && form.city && form.state && form.zip_code && passwordsMatch;
   const canStep4 = form.terms;
+
+  const handleStep2Next = () => {
+    if (!form.email || !form.phone || !form.address || !form.address_number || !form.neighborhood || !form.city || !form.state || !form.zip_code) {
+      setStep2Error('Preencha todos os campos obrigatórios de contato e endereço.');
+      return;
+    }
+    if (!passwordsMatch) {
+      setStep2Error('As senhas devem coincidir e ter pelo menos 6 caracteres.');
+      return;
+    }
+    setStep2Error('');
+    setStep(3);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -265,20 +281,66 @@ export default function EmpresaCadastroPage() {
               <h2>Etapa 2: Contato e endereco</h2>
               <div className="form-group">
                 <label>E-mail *</label>
-                <input type="email" value={form.email} onChange={(e) => updateForm('email', e.target.value)} placeholder="contato@petshop.com" required />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => updateForm('email', e.target.value)}
+                  placeholder="contato@petshop.com"
+                  autoComplete="email"
+                  required
+                />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Senha *</label>
-                  <input type="password" value={form.password} onChange={(e) => updateForm('password', e.target.value)} placeholder="Min. 6 caracteres" minLength={6} required />
+                  <div className="password-field">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => updateForm('password', e.target.value)}
+                      placeholder="Min. 6 caracteres"
+                      minLength={6}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    >
+                      {showPassword ? '🙈' : '👁'}
+                    </button>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Confirmar senha *</label>
-                  <input type="password" value={form.confirmPassword} onChange={(e) => updateForm('confirmPassword', e.target.value)} placeholder="Repita a senha" minLength={6} required />
+                  <div className="password-field">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={form.confirmPassword}
+                      onChange={(e) => updateForm('confirmPassword', e.target.value)}
+                      placeholder="Repita a senha"
+                      minLength={6}
+                      autoComplete="new-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? 'Ocultar senha de confirmação' : 'Mostrar senha de confirmação'}
+                    >
+                      {showConfirmPassword ? '🙈' : '👁'}
+                    </button>
+                  </div>
                 </div>
               </div>
               {form.password && form.confirmPassword && !passwordsMatch && (
                 <p className="form-error">As senhas devem coincidir e ter pelo menos 6 caracteres.</p>
+              )}
+              {step2Error && (
+                <p className="form-error">{step2Error}</p>
               )}
               <div className="form-row">
                 <div className="form-group">
@@ -324,7 +386,7 @@ export default function EmpresaCadastroPage() {
               </div>
               <div className="form-actions">
                 <button type="button" className="btn-prev" onClick={() => setStep(1)}>Voltar</button>
-                <button type="button" className="btn-next" onClick={() => setStep(3)} disabled={!canStep2}>Continuar</button>
+                <button type="button" className="btn-next" onClick={handleStep2Next}>Continuar</button>
               </div>
             </div>
           )}
