@@ -87,7 +87,7 @@ router.post('/', [
   body('name').trim().notEmpty().withMessage('Nome é obrigatório'),
   body('species').optional().isIn(['dog', 'cat', 'bird', 'rabbit', 'other']),
   validate
-], (req, res) => {
+], async (req, res) => {
   const { 
     name, 
     breed, 
@@ -130,8 +130,8 @@ router.post('/', [
     });
   }
 
+  const now = new Date();
   const newPet = {
-    id: petsState.petIdCounter++,
     userId: isCustomerPet ? null : ownerId,
     customerId: isCustomerPet ? ownerId : null,
     name,
@@ -142,8 +142,8 @@ router.post('/', [
     color: color || null,
     weight: weight || null,
     photo: photo || null,
-    importantInfo: importantInfo || null, // Alerta em destaque
-    behaviorAlerts: behaviorAlerts || [], // Array de alertas
+    importantInfo: importantInfo || null,
+    behaviorAlerts: behaviorAlerts || [],
     groomingPreferences: groomingPreferences || {
       hairLength: null,
       shampooType: null,
@@ -152,12 +152,37 @@ router.post('/', [
     },
     is_active: true,
     deleted_at: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now,
+    updatedAt: now,
   };
 
-  pets.push(newPet);
-  res.status(201).json({ message: 'Pet cadastrado com sucesso', pet: newPet });
+  const created = await Pet.create({
+    userId: newPet.userId,
+    customerId: newPet.customerId,
+    name: newPet.name,
+    breed: newPet.breed,
+    age: newPet.age,
+    birthDate: newPet.birthDate,
+    species: newPet.species,
+    color: newPet.color,
+    weight: newPet.weight,
+    photo: newPet.photo,
+    importantInfo: newPet.importantInfo,
+    behaviorAlerts: newPet.behaviorAlerts,
+    groomingPreferences: newPet.groomingPreferences,
+    is_active: newPet.is_active,
+    deleted_at: newPet.deleted_at,
+  });
+
+  const persistedPet = {
+    ...newPet,
+    id: created.id,
+  };
+
+  pets.push(persistedPet);
+  petsState.petIdCounter = Math.max(petsState.petIdCounter, created.id + 1);
+
+  res.status(201).json({ message: 'Pet cadastrado com sucesso', pet: persistedPet });
 });
 
 // Histórico completo do pet (agendamentos + fotos)
@@ -208,7 +233,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Atualizar pet
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   const pet = pets.find(p => p.id === parseInt(req.params.id));
   
   if (!pet) {
@@ -221,12 +246,30 @@ router.put('/:id', authenticateToken, (req, res) => {
   }
 
   const petIndex = pets.findIndex(p => p.id === parseInt(req.params.id));
-  
-  pets[petIndex] = { 
-    ...pets[petIndex], 
-    ...req.body, 
-    updatedAt: new Date() 
+  const updated = {
+    ...pets[petIndex],
+    ...req.body,
+    updatedAt: new Date(),
   };
+
+  await Pet.update(
+    {
+      name: updated.name,
+      breed: updated.breed,
+      age: updated.age,
+      birthDate: updated.birthDate,
+      species: updated.species,
+      color: updated.color,
+      weight: updated.weight,
+      photo: updated.photo,
+      importantInfo: updated.importantInfo,
+      behaviorAlerts: updated.behaviorAlerts,
+      groomingPreferences: updated.groomingPreferences,
+    },
+    { where: { id: updated.id } },
+  );
+
+  pets[petIndex] = updated;
   
   res.json({ message: 'Pet atualizado com sucesso', pet: pets[petIndex] });
 });
@@ -236,7 +279,7 @@ router.delete('/:id', [
   authenticateToken,
   requireRole('master', 'manager', 'super_admin'),
   body('reason').trim().notEmpty().withMessage('Motivo da desativação é obrigatório'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -263,6 +306,15 @@ router.delete('/:id', [
   pets[petIndex].is_active = false;
   pets[petIndex].deleted_at = new Date();
   pets[petIndex].updatedAt = new Date();
+
+  await Pet.update(
+    {
+      is_active: false,
+      deleted_at: pets[petIndex].deleted_at,
+      updated_at: pets[petIndex].updatedAt,
+    },
+    { where: { id: pets[petIndex].id } },
+  );
 
   logAudit({
     userId: req.user.userId || req.user.id,

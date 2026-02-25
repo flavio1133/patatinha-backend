@@ -3,10 +3,29 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { authenticateToken } = require('../middleware/auth.middleware');
 const { isProductAvailable, checkLowStock } = require('../services/business-rules.service');
+const { Product } = require('../db');
 
-// TODO: Implementar conexão com banco de dados
+// Cache em memória para compatibilidade
 const products = [];
-let productIdCounter = 1;
+
+async function hydrateProductsFromDatabase() {
+  try {
+    const rows = await Product.findAll({ order: [['id', 'ASC']] });
+    products.length = 0;
+    rows.forEach((row) => {
+      const plain = row.get({ plain: true });
+      products.push({
+        ...plain,
+        createdAt: plain.createdAt || plain.created_at,
+        updatedAt: plain.updatedAt || plain.updated_at,
+      });
+    });
+  } catch (err) {
+    console.error('Erro ao carregar produtos do banco:', err.message);
+  }
+}
+
+hydrateProductsFromDatabase();
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -66,7 +85,7 @@ router.post('/', [
   body('name').trim().notEmpty().withMessage('Nome é obrigatório'),
   body('category').isIn(['racao', 'shampoo', 'condicionador', 'perfume', 'antisseptico', 'acessorios', 'medicamentos', 'outros']),
   validate
-], (req, res) => {
+], async (req, res) => {
   const {
     name,
     brand,
@@ -91,8 +110,7 @@ router.post('/', [
     unit, // Unidade de medida (ml, litros, gramas, kg)
   } = req.body;
 
-  const newProduct = {
-    id: productIdCounter++,
+  const newProductData = {
     name,
     brand: brand || null,
     sku: sku || null,
@@ -110,11 +128,16 @@ router.post('/', [
     cost: cost ? parseFloat(cost) : null,
     yieldPerService: yieldPerService ? parseFloat(yieldPerService) : null,
     unit: unit || null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
-  products.push(newProduct);
+  const created = await Product.create(newProductData);
+  const newProduct = created.get({ plain: true });
+
+  products.push({
+    ...newProduct,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
   res.status(201).json({
     message: 'Produto cadastrado com sucesso',
     product: newProduct,
@@ -122,18 +145,43 @@ router.post('/', [
 });
 
 // Atualizar produto
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
   const productIndex = products.findIndex(p => p.id === parseInt(req.params.id));
 
   if (productIndex === -1) {
     return res.status(404).json({ error: 'Produto não encontrado' });
   }
 
-  products[productIndex] = {
+  const updated = {
     ...products[productIndex],
     ...req.body,
     updatedAt: new Date(),
   };
+
+  await Product.update(
+    {
+      name: updated.name,
+      brand: updated.brand,
+      sku: updated.sku,
+      category: updated.category,
+      description: updated.description,
+      price: updated.price,
+      stock: updated.stock,
+      minStock: updated.minStock,
+      sellByWeight: updated.sellByWeight,
+      stockWeight: updated.stockWeight,
+      minStockWeight: updated.minStockWeight,
+      pricePerKg: updated.pricePerKg,
+      isConsumable: updated.isConsumable,
+      volume: updated.volume,
+      cost: updated.cost,
+      yieldPerService: updated.yieldPerService,
+      unit: updated.unit,
+    },
+    { where: { id: updated.id } },
+  );
+
+  products[productIndex] = updated;
 
   res.json({
     message: 'Produto atualizado com sucesso',
@@ -142,14 +190,17 @@ router.put('/:id', authenticateToken, (req, res) => {
 });
 
 // Deletar produto
-router.delete('/:id', authenticateToken, (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
   const productIndex = products.findIndex(p => p.id === parseInt(req.params.id));
 
   if (productIndex === -1) {
     return res.status(404).json({ error: 'Produto não encontrado' });
   }
 
+  const product = products[productIndex];
   products.splice(productIndex, 1);
+
+  await Product.destroy({ where: { id: product.id } });
   res.json({ message: 'Produto removido com sucesso' });
 });
 
@@ -158,7 +209,7 @@ router.post('/:id/stock-in', [
   authenticateToken,
   body('quantity').isFloat({ min: 0.01 }).withMessage('Quantidade deve ser maior que zero'),
   validate
-], (req, res) => {
+], async (req, res) => {
   const { quantity, cost, notes } = req.body;
   const product = products.find(p => p.id === parseInt(req.params.id));
 
@@ -186,6 +237,15 @@ router.post('/:id/stock-in', [
 
   product.updatedAt = new Date();
 
+  await Product.update(
+    {
+      stock: product.stock,
+      stockWeight: product.stockWeight,
+      cost: product.cost,
+    },
+    { where: { id: product.id } },
+  );
+
   res.json({
     message: 'Entrada de estoque registrada',
     product,
@@ -197,7 +257,7 @@ router.post('/:id/stock-out', [
   authenticateToken,
   body('quantity').isFloat({ min: 0.01 }).withMessage('Quantidade deve ser maior que zero'),
   validate
-], (req, res) => {
+], async (req, res) => {
   const { quantity, reason, notes } = req.body; // reason: 'sale', 'service', 'loss', 'adjustment'
   const product = products.find(p => p.id === parseInt(req.params.id));
 
@@ -235,6 +295,14 @@ router.post('/:id/stock-out', [
   }
 
   product.updatedAt = new Date();
+
+  await Product.update(
+    {
+      stock: product.stock,
+      stockWeight: product.stockWeight,
+    },
+    { where: { id: product.id } },
+  );
 
   res.json({
     message: 'Saída de estoque registrada',

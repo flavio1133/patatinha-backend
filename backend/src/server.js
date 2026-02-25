@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { sequelize } = require('./db');
 const dotenv = require('dotenv');
 
 // Carregar variáveis de ambiente
@@ -109,7 +110,8 @@ app.use('/api/products', require('./routes/products.routes'));
 app.use('/api/notifications', require('./routes/notifications.routes'));
 
 // Seed de dados para desenvolvimento (profissionais, pets, agendamentos)
-if (process.env.NODE_ENV !== 'production') {
+// ⚠ Importante: só roda quando RUN_SEED=true, para não apagar dados reais por engano
+if (process.env.NODE_ENV === 'development' && process.env.RUN_SEED === 'true') {
   try {
     const { runSeed } = require('./scripts/seed-data');
     runSeed();
@@ -141,17 +143,27 @@ module.exports = app;
 
 // Iniciar servidor apenas se não estiver em modo de teste
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-
-    // Jobs de expiração de códigos (executa na inicialização e a cada 24h)
+  (async () => {
     try {
-      const { runAll: runInvitationJobs } = require('./jobs/invitationCodeJobs');
-      runInvitationJobs();
-      setInterval(runInvitationJobs, 24 * 60 * 60 * 1000);
+      await sequelize.authenticate();
+      await sequelize.sync();
+      console.log('✅ Conectado ao banco de dados e modelos sincronizados.');
     } catch (err) {
-      console.warn('Jobs de códigos não carregados:', err.message);
+      console.error('❌ Erro ao conectar no banco de dados:', err.message);
     }
-  });
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+      console.log(`📍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+
+      // Jobs de expiração de códigos (executa na inicialização e a cada 24h)
+      try {
+        const { runAll: runInvitationJobs } = require('./jobs/invitationCodeJobs');
+        runInvitationJobs();
+        setInterval(runInvitationJobs, 24 * 60 * 60 * 1000);
+      } catch (err) {
+        console.warn('Jobs de códigos não carregados:', err.message);
+      }
+    });
+  })();
 }

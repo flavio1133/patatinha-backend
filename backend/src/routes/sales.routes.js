@@ -6,10 +6,28 @@ const {
   isProductAvailable,
   calculateFractionalPrice,
 } = require('../services/business-rules.service');
+const { Sale } = require('../db');
 
-// TODO: Implementar conexão com banco de dados
+// Cache em memória
 const sales = [];
-let saleIdCounter = 1;
+
+async function hydrateSalesFromDatabase() {
+  try {
+    const rows = await Sale.findAll({ order: [['id', 'ASC']] });
+    sales.length = 0;
+    rows.forEach((row) => {
+      const plain = row.get({ plain: true });
+      sales.push({
+        ...plain,
+        createdAt: plain.createdAt || plain.created_at,
+      });
+    });
+  } catch (err) {
+    console.error('Erro ao carregar vendas do banco:', err.message);
+  }
+}
+
+hydrateSalesFromDatabase();
 
 const validate = (req, res, next) => {
   const errors = validationResult(req);
@@ -67,7 +85,7 @@ router.post('/', [
   body('items.*.quantity').isFloat({ min: 0.01 }).withMessage('Quantidade deve ser maior que zero'),
   body('paymentMethod').isIn(['cash', 'credit_card', 'debit_card', 'pix', 'store_credit']),
   validate
-], (req, res) => {
+], async (req, res) => {
   const {
     customerId,
     items, // [{ productId, quantity, price }]
@@ -136,24 +154,29 @@ router.post('/', [
     }
   }
 
-  const newSale = {
-    id: saleIdCounter++,
+  const now = new Date();
+  const newSaleData = {
     customerId: customerId || null,
     appointmentId: appointmentId || null,
     items: saleItems,
     subtotal: total,
-    discount: 0, // TODO: Implementar descontos
+    discount: 0,
     total: total,
     paymentMethod,
     cashAmount: cashAmount ? parseFloat(cashAmount) : null,
     change: change ? parseFloat(change) : null,
     notes: notes || null,
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toTimeString().split(' ')[0].substring(0, 5),
-    createdAt: new Date(),
+    date: now.toISOString().split('T')[0],
+    time: now.toTimeString().split(' ')[0].substring(0, 5),
   };
 
-  sales.push(newSale);
+  const created = await Sale.create(newSaleData);
+  const newSale = created.get({ plain: true });
+
+  sales.push({
+    ...newSale,
+    createdAt: now,
+  });
 
   res.status(201).json({
     message: 'Venda realizada com sucesso',

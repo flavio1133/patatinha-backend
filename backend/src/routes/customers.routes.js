@@ -6,29 +6,54 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const { users } = require('./auth.routes');
 const { logAudit } = require('../services/audit.service');
+const { Customer } = require('../db');
 
-// TODO: Substituir por conexão com banco de dados
-// Estrutura de dados em memória para desenvolvimento
+// Cache em memória + controle de IDs para compatibilidade
 const customers = [];
 const customersState = { customerIdCounter: 1 };
 
-// Cliente fictício ligado ao login cliente@teste.com
-// Útil para cenários de demonstração (empresa + cliente real)
-const demoCustomer = {
-  id: customersState.customerIdCounter++,
-  name: 'Cliente Teste Patatinha',
-  phone: '(81) 98888-0000',
-  email: 'cliente@teste.com',
-  address: 'Av. Boa Viagem, 123 - Boa Viagem, Recife - PE',
-  notes: 'Cliente de demonstração para testes da plataforma.',
-  photo: null,
-  userId: 5, // userId do cliente@teste.com (seed-users) para ver agendamentos na área do cliente
-  is_active: true,
-  deleted_at: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-customers.push(demoCustomer);
+async function hydrateCustomersFromDatabase() {
+  try {
+    const rows = await Customer.findAll({ order: [['id', 'ASC']] });
+    customers.length = 0;
+
+    rows.forEach((row) => {
+      const plain = row.get({ plain: true });
+      customers.push({
+        ...plain,
+        createdAt: plain.createdAt || plain.created_at,
+        updatedAt: plain.updatedAt || plain.updated_at,
+      });
+    });
+
+    const last = customers[customers.length - 1];
+    customersState.customerIdCounter = last ? last.id + 1 : 1;
+
+    // Cliente demo em memória (não persiste) – mantido para cenários de demonstração
+    if (!customers.some((c) => c.email === 'cliente@teste.com')) {
+      const demoCustomer = {
+        id: customersState.customerIdCounter++,
+        name: 'Cliente Teste Patatinha',
+        phone: '(81) 98888-0000',
+        email: 'cliente@teste.com',
+        address: 'Av. Boa Viagem, 123 - Boa Viagem, Recife - PE',
+        notes: 'Cliente de demonstração para testes da plataforma.',
+        photo: null,
+        userId: 5,
+        is_active: true,
+        deleted_at: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      customers.push(demoCustomer);
+    }
+  } catch (err) {
+    console.error('Erro ao carregar clientes do banco:', err.message);
+  }
+}
+
+// Hidratar ao carregar o módulo
+hydrateCustomersFromDatabase();
 
 // Middleware de validação
 const validate = (req, res, next) => {
@@ -97,7 +122,7 @@ router.post('/', [
   body('phone').trim().notEmpty().withMessage('Telefone é obrigatório'),
   body('email').optional().isEmail().withMessage('E-mail inválido'),
   validate
-], (req, res) => {
+], async (req, res) => {
   const { name, phone, email, address, notes } = req.body;
 
   // Verificar se já existe cliente com mesmo telefone
@@ -130,8 +155,8 @@ router.post('/', [
     }
   }
 
+  const now = new Date();
   const newCustomer = {
-    id: customersState.customerIdCounter++,
     name,
     phone,
     email: email || null,
@@ -141,14 +166,34 @@ router.post('/', [
     photo: null,
     is_active: true,
     deleted_at: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now,
+    updatedAt: now,
   };
 
-  customers.push(newCustomer);
+  // Persistir no banco
+  const created = await Customer.create({
+    name: newCustomer.name,
+    phone: newCustomer.phone,
+    email: newCustomer.email,
+    address: newCustomer.address,
+    notes: newCustomer.notes,
+    userId: newCustomer.userId,
+    photo: newCustomer.photo,
+    is_active: newCustomer.is_active,
+    deleted_at: newCustomer.deleted_at,
+  });
+
+  const persistedCustomer = {
+    ...newCustomer,
+    id: created.id,
+  };
+
+  // Atualizar cache em memória
+  customers.push(persistedCustomer);
+  customersState.customerIdCounter = Math.max(customersState.customerIdCounter, created.id + 1);
   res.status(201).json({
     message: 'Cliente cadastrado com sucesso',
-    customer: newCustomer,
+    customer: persistedCustomer,
   });
 });
 
@@ -159,7 +204,7 @@ router.put('/:id', [
   body('phone').optional().trim().notEmpty(),
   body('email').optional().isEmail(),
   validate
-], (req, res) => {
+], async (req, res) => {
   const customerIndex = customers.findIndex(c => c.id === parseInt(req.params.id));
 
   if (customerIndex === -1) {
@@ -176,12 +221,25 @@ router.put('/:id', [
     }
   }
 
-  customers[customerIndex] = {
+  const updated = {
     ...customers[customerIndex],
     ...req.body,
     updatedAt: new Date(),
   };
 
+  // Persistir no banco
+  await Customer.update(
+    {
+      name: updated.name,
+      phone: updated.phone,
+      email: updated.email,
+      address: updated.address,
+      notes: updated.notes,
+    },
+    { where: { id: updated.id } },
+  );
+
+  customers[customerIndex] = updated;
   res.json({
     message: 'Cliente atualizado com sucesso',
     customer: customers[customerIndex],
@@ -193,7 +251,7 @@ router.delete('/:id', [
   authenticateToken,
   requireRole('master', 'manager', 'super_admin'),
   body('reason').trim().notEmpty().withMessage('Motivo da desativação é obrigatório'),
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -216,6 +274,16 @@ router.delete('/:id', [
   customers[customerIndex].is_active = false;
   customers[customerIndex].deleted_at = new Date();
   customers[customerIndex].updatedAt = new Date();
+
+  // Persistir no banco
+  await Customer.update(
+    {
+      is_active: false,
+      deleted_at: customers[customerIndex].deleted_at,
+      updated_at: customers[customerIndex].updatedAt,
+    },
+    { where: { id: customers[customerIndex].id } },
+  );
 
   logAudit({
     userId: req.user.userId || req.user.id,

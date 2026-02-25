@@ -594,10 +594,12 @@ router.get('/:id/invitation-codes', authCompany, async (req, res) => {
   list = list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   // Enriquecer com nome/e-mail do cliente quando houver vínculo
+  // client_id armazena o ID do usuário de autenticação (auth.routes), que se
+  // relaciona com o cliente pela coluna customers.user_id
   const enriched = await Promise.all(list.map(async (inv) => {
     if (!inv.client_id) return inv;
     try {
-      const customer = await Customer.findByPk(inv.client_id);
+      const customer = await Customer.findOne({ where: { userId: inv.client_id } });
       if (!customer) return inv;
       const plain = customer.get({ plain: true });
       return {
