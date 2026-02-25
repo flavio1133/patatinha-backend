@@ -10,7 +10,10 @@ const { generateUniqueInvitationCode } = require('../utils/codeGenerator');
 const JWT_SECRET = process.env.JWT_SECRET || 'patatinha-secret-key-change-in-production';
 
 const { invitationCodes, clientCompanies, nextLinkId } = require('../data/invitation-codes.data');
-const { InvitationCode, ClientCompany } = require('../db');
+const { InvitationCode, ClientCompany, Customer } = require('../db');
+const customersModule = require('./customers.routes');
+const { customers, customersState } = customersModule;
+const { users } = require('./auth.routes');
 
 // Helpers
 function getCompanies() {
@@ -187,6 +190,48 @@ router.post('/link-client-to-company', authClient, [
     });
   } catch (err) {
     console.error('Erro ao criar vínculo cliente-empresa no banco:', err.message);
+  }
+
+  // Criar automaticamente um registro de cliente (customers) para este usuário,
+  // caso ainda não exista, para que apareça na aba Clientes da gestão.
+  try {
+    const existingCustomer = customers.find((c) => c.userId === clientId);
+    if (!existingCustomer) {
+      const user = users.find((u) => u.id === clientId);
+      if (user) {
+        const now = new Date();
+        const newCustomer = {
+          id: customersState.customerIdCounter++,
+          name: user.name || 'Cliente',
+          phone: user.phone || '',
+          email: user.email || null,
+          address: null,
+          notes: null,
+          userId: clientId,
+          photo: null,
+          is_active: true,
+          deleted_at: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        customers.push(newCustomer);
+
+        await Customer.create({
+          name: newCustomer.name,
+          phone: newCustomer.phone,
+          email: newCustomer.email,
+          address: newCustomer.address,
+          notes: newCustomer.notes,
+          userId: newCustomer.userId,
+          photo: newCustomer.photo,
+          is_active: newCustomer.is_active,
+          deleted_at: newCustomer.deleted_at,
+        });
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao criar cliente vinculado na tabela customers:', err.message);
   }
 
   res.json({ success: true, message: 'Cliente vinculado com sucesso', company_id: invitation.company_id });

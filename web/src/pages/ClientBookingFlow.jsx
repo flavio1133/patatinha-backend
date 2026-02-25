@@ -38,20 +38,34 @@ export default function ClientBookingFlow() {
 
   const calendarDays = useMemo(() => getDaysNext(30), []);
 
+  const storedCompanyId = typeof window !== 'undefined'
+    ? window.localStorage.getItem('client_company_id')
+    : null;
+
   const { data: linkedData } = useQuery({
     queryKey: ['linked-companies'],
     queryFn: () => invitationCodesAPI.getLinkedCompanies(),
     retry: false,
   });
   const linkedCompanies = linkedData?.companies || [];
-  const effectiveCompanyId = booking.companyId || contextCompanyId;
+  const effectiveCompanyId = booking.companyId || contextCompanyId || storedCompanyId || undefined;
 
   useEffect(() => {
     if (linkedCompanies.length === 1 && !booking.companyId) {
       updateBooking({ companyId: linkedCompanies[0].id, company: linkedCompanies[0] });
       goToStep(1);
     }
-  }, [linkedCompanies.length, booking.companyId, updateBooking, goToStep]);
+  }, [linkedCompanies, booking.companyId, updateBooking, goToStep]);
+
+  // Fallback: se a API de empresas vinculadas ainda não retornou nada,
+  // mas existe companyId salvo em localStorage (client_company_id),
+  // considerar o cliente como vinculado para permitir o agendamento.
+  useEffect(() => {
+    if (!booking.companyId && !linkedCompanies.length && storedCompanyId) {
+      updateBooking({ companyId: storedCompanyId });
+      goToStep(1);
+    }
+  }, [booking.companyId, linkedCompanies.length, storedCompanyId, updateBooking, goToStep]);
 
   const { data: petsData } = useQuery({
     queryKey: ['cliente-pets'],
@@ -146,7 +160,7 @@ export default function ClientBookingFlow() {
   const progress = ((step + 1) / 5) * 100;
 
   const needUnitStep = linkedCompanies.length > 1;
-  const hasNoCompany = linkedCompanies.length === 0 && !booking.companyId;
+  const hasNoCompany = linkedCompanies.length === 0 && !booking.companyId && !storedCompanyId;
   const canProceedWithoutPets = currentStepName === 'unit';
 
   return (
