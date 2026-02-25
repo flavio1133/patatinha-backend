@@ -1,18 +1,21 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
-const STEPS = ['pet', 'service', 'datetime', 'confirm'];
+const STEPS = ['unit', 'pet', 'service', 'datetime', 'confirm'];
 
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
   const [step, setStep] = useState(0);
   const [booking, setBooking] = useState({
+    companyId: null,
+    company: null,
     petId: null,
     pet: null,
     service: 'banho_tosa',
     date: '',
     time: '',
     notes: '',
+    professionalId: null,
   });
 
   const nextStep = useCallback(() => {
@@ -34,12 +37,15 @@ export function BookingProvider({ children }) {
   const reset = useCallback(() => {
     setStep(0);
     setBooking({
+      companyId: null,
+      company: null,
       petId: null,
       pet: null,
       service: 'banho_tosa',
       date: '',
       time: '',
       notes: '',
+      professionalId: null,
     });
   }, []);
 

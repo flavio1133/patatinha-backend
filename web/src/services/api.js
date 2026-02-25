@@ -147,6 +147,8 @@ export const invitationCodesAPI = {
     api.post('/validate-invitation-code', { code }),
   linkToCompany: (invitationId) =>
     api.post('/link-client-to-company', { invitationId }),
+  getLinkedCompanies: () =>
+    api.get('/linked-companies').then((r) => r.data),
 };
 
 export const subscriptionPlansAPI = {
@@ -204,8 +206,8 @@ export const appointmentsAPI = {
     api.post('/appointments', data),
   update: (id, data) =>
     api.put(`/appointments/${id}`, data),
-  cancel: (id) =>
-    api.delete(`/appointments/${id}`),
+  cancel: (id, data) =>
+    api.delete(`/appointments/${id}`, { data: data || {} }),
   getAvailability: (date, service) =>
     api.get('/appointments/availability', { params: { date, service } }),
   checkIn: (id) =>

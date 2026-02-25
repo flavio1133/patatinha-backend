@@ -24,6 +24,8 @@ const STATUS_LABEL = {
 export default function ClientAppointmentsPage() {
   const queryClient = useQueryClient();
   const [cancelandoId, setCancelandoId] = useState(null);
+  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const { data: appointmentsData } = useQuery({
     queryKey: ['cliente-appointments'],
@@ -38,10 +40,12 @@ export default function ClientAppointmentsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id) => appointmentsAPI.cancel(id),
-    onSuccess: () => {
+    mutationFn: ({ id, reason }) => appointmentsAPI.cancel(id, { reason }),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['cliente-appointments'] });
       setCancelandoId(null);
+      setCancelModal(null);
+      setCancelReason('');
     },
     onError: () => setCancelandoId(null),
   });
@@ -86,11 +90,15 @@ export default function ClientAppointmentsPage() {
     [appointments, petsMap, today]
   );
 
-  const handleCancel = (id) => {
-    if (window.confirm('Deseja realmente cancelar este agendamento?')) {
-      setCancelandoId(id);
-      cancelMutation.mutate(id);
-    }
+  const handleCancelClick = (a) => {
+    setCancelModal(a);
+    setCancelReason('');
+  };
+
+  const handleCancelConfirm = () => {
+    if (!cancelModal || !cancelReason.trim()) return;
+    setCancelandoId(cancelModal.id);
+    cancelMutation.mutate({ id: cancelModal.id, reason: cancelReason.trim() });
   };
 
   return (
@@ -123,7 +131,7 @@ export default function ClientAppointmentsPage() {
                   type="button"
                   className="btn-cancel-appointment"
                   disabled={cancelandoId === a.id}
-                  onClick={() => handleCancel(a.id)}
+                  onClick={() => handleCancelClick(a)}
                 >
                   {cancelandoId === a.id ? 'Cancelando...' : 'Cancelar'}
                 </button>
@@ -137,6 +145,42 @@ export default function ClientAppointmentsPage() {
         <div className="client-appointments-empty">
           <p>Nenhum agendamento futuro.</p>
           <Link to="/cliente/agendar">Agendar serviço</Link>
+        </div>
+      )}
+
+      {cancelModal && (
+        <div className="modal-overlay" onClick={() => !cancelMutation.isPending && setCancelModal(null)}>
+          <div className="modal-content modal-cancel-appointment" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancelar agendamento</h3>
+            <p className="modal-cancel-desc">
+              {cancelModal.petName} – {cancelModal.serviceLabel} em{' '}
+              {new Date(cancelModal.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {cancelModal.time}.
+            </p>
+            <p className="modal-cancel-warn">
+              Cancelamentos com menos de 2h de antecedência podem estar sujeitos a taxa. Entre em contato com o Pet Shop para estorno ou crédito.
+            </p>
+            <label>Justificativa (obrigatória) *</label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Ex.: Imprevisto, mudança de horário..."
+              rows={3}
+              className="modal-cancel-reason"
+            />
+            <div className="modal-actions">
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setCancelModal(null)} disabled={cancelMutation.isPending}>
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={handleCancelConfirm}
+                disabled={cancelMutation.isPending || !cancelReason.trim()}
+              >
+                {cancelMutation.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

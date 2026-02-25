@@ -95,6 +95,27 @@ router.post('/validate-invitation-code', [
   });
 });
 
+// GET /api/linked-companies - Listar Pet Shops vinculados ao cliente (requer auth cliente)
+router.get('/linked-companies', authClient, (req, res) => {
+  const clientId = req.userId;
+  const companies = getCompanies();
+  const links = clientCompanies.filter(
+    (l) => String(l.client_id) === String(clientId) && l.is_active
+  );
+  const list = links.map((l) => {
+    const company = companies.find((c) => c.id === l.company_id);
+    if (!company) return null;
+    return {
+      id: company.id,
+      name: company.name,
+      logo_url: company.logo_url,
+      phone: company.phone,
+      whatsapp: company.whatsapp,
+    };
+  }).filter(Boolean);
+  res.json({ companies: list });
+});
+
 // POST /api/link-client-to-company - Vincular cliente à empresa (requer auth cliente)
 router.post('/link-client-to-company', authClient, [
   body('invitationId').notEmpty().withMessage('ID do convite é obrigatório'),

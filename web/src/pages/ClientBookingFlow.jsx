@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useBooking } from '../contexts/BookingContext';
 import { useCompany } from '../contexts/CompanyContext';
-import { appointmentsAPI, petsAPI, companiesAPI } from '../services/api';
+import { appointmentsAPI, petsAPI, companiesAPI, invitationCodesAPI } from '../services/api';
 import './ClientBookingFlow.css';
 
 const SERVICOS = [
@@ -31,12 +31,27 @@ const dateStr = (d) => d.toISOString().split('T')[0];
 export default function ClientBookingFlow() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { companyId } = useCompany();
-  const { step, currentStepName, booking, updateBooking, nextStep, prevStep, reset } = useBooking();
+  const { companyId: contextCompanyId, setCompanyId: setContextCompanyId } = useCompany();
+  const { step, currentStepName, booking, updateBooking, nextStep, prevStep, goToStep, reset } = useBooking();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
   const calendarDays = useMemo(() => getDaysNext(30), []);
+
+  const { data: linkedData } = useQuery({
+    queryKey: ['linked-companies'],
+    queryFn: () => invitationCodesAPI.getLinkedCompanies(),
+    retry: false,
+  });
+  const linkedCompanies = linkedData?.companies || [];
+  const effectiveCompanyId = booking.companyId || contextCompanyId;
+
+  useEffect(() => {
+    if (linkedCompanies.length === 1 && !booking.companyId) {
+      updateBooking({ companyId: linkedCompanies[0].id, company: linkedCompanies[0] });
+      goToStep(1);
+    }
+  }, [linkedCompanies.length, booking.companyId, updateBooking, goToStep]);
 
   const { data: petsData } = useQuery({
     queryKey: ['cliente-pets'],
@@ -44,16 +59,28 @@ export default function ClientBookingFlow() {
     retry: false,
   });
 
-  // Disponibilidade: se vinculado à empresa, usa rota pública por companyId; senão usa /appointments/availability (com auth)
+  const { data: companyPublicData } = useQuery({
+    queryKey: ['company-public', effectiveCompanyId],
+    queryFn: () => companiesAPI.getPublic(effectiveCompanyId).then((r) => r.data),
+    enabled: !!effectiveCompanyId,
+    retry: false,
+  });
+  const servicesOffered = companyPublicData?.services_offered || [];
+  const serviceOptions = useMemo(() => {
+    const all = SERVICOS;
+    if (servicesOffered.length === 0) return all;
+    return all.filter((s) => servicesOffered.includes(s.value));
+  }, [servicesOffered]);
+
   const getAvailabilityFn = (d, s) =>
-    companyId
-      ? companiesAPI.getAvailability(companyId, d, s).then((res) => res.data)
+    effectiveCompanyId
+      ? companiesAPI.getAvailability(effectiveCompanyId, d, s).then((res) => res.data)
       : appointmentsAPI.getAvailability(d, s).then((res) => res.data);
 
   const { data: availabilityData, isLoading: loadingSlots } = useQuery({
-    queryKey: ['availability', companyId, booking.date, booking.service],
+    queryKey: ['availability', effectiveCompanyId, booking.date, booking.service],
     queryFn: () => getAvailabilityFn(booking.date, booking.service),
-    enabled: !!booking.date && !!booking.service,
+    enabled: !!effectiveCompanyId && !!booking.date && !!booking.service,
     retry: false,
   });
 
@@ -61,6 +88,7 @@ export default function ClientBookingFlow() {
     mutationFn: (body) => appointmentsAPI.create(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cliente-appointments'] });
+      if (booking.companyId) setContextCompanyId(booking.companyId);
       reset();
       setSuccess(true);
       setError('');
@@ -71,11 +99,19 @@ export default function ClientBookingFlow() {
 
   const pets = petsData?.pets || [];
   const availability = availabilityData?.availability || [];
+  const availabilityFiltered = useMemo(() => {
+    if (!booking.professionalId) return availability;
+    return availability.filter((a) => String(a.professionalId) === String(booking.professionalId));
+  }, [availability, booking.professionalId]);
   const allSlots = useMemo(() => {
     const set = new Set();
-    availability.forEach((a) => (a.availableSlots || []).forEach((t) => set.add(t)));
+    availabilityFiltered.forEach((a) => (a.availableSlots || []).forEach((t) => set.add(t)));
     return Array.from(set).sort();
-  }, [availability]);
+  }, [availabilityFiltered]);
+  const professionalOptions = useMemo(
+    () => availability.map((a) => ({ id: a.professionalId, name: a.professionalName })),
+    [availability]
+  );
 
   const handleConfirm = () => {
     setError('');
@@ -89,6 +125,8 @@ export default function ClientBookingFlow() {
       date: booking.date,
       time: booking.time,
       notes: booking.notes?.trim() || undefined,
+      companyId: effectiveCompanyId || undefined,
+      professionalId: booking.professionalId ? parseInt(booking.professionalId, 10) : undefined,
     });
   };
 
@@ -104,8 +142,12 @@ export default function ClientBookingFlow() {
     );
   }
 
-  const stepLabels = ['Pet', 'Serviço', 'Data e Horário', 'Confirmar'];
-  const progress = ((step + 1) / 4) * 100;
+  const stepLabels = ['Pet Shop', 'Pet', 'Serviço', 'Data e Horário', 'Confirmar'];
+  const progress = ((step + 1) / 5) * 100;
+
+  const needUnitStep = linkedCompanies.length > 1;
+  const hasNoCompany = linkedCompanies.length === 0 && !booking.companyId;
+  const canProceedWithoutPets = currentStepName === 'unit';
 
   return (
     <div className="client-booking-flow">
@@ -114,16 +156,40 @@ export default function ClientBookingFlow() {
         <div className="client-booking-progress">
           <div className="progress-bar" style={{ width: `${progress}%` }} />
         </div>
-        <p className="client-booking-step-label">Etapa {step + 1} de 4: {stepLabels[step]}</p>
+        <p className="client-booking-step-label">Etapa {step + 1} de 5: {stepLabels[step]}</p>
       </header>
 
-      {pets.length === 0 ? (
+      {hasNoCompany ? (
+        <div className="cliente-card agendar-empty">
+          <p>Você ainda não está vinculado a nenhum Pet Shop.</p>
+          <Link to="/cliente/codigo">Vincular Pet Shop</Link> com um código de acesso e depois volte para agendar.
+        </div>
+      ) : pets.length === 0 && !canProceedWithoutPets ? (
         <div className="cliente-card agendar-empty">
           <p>Você ainda não tem pets cadastrados.</p>
           <Link to="/cliente/pets/novo">Cadastrar pet</Link> e depois volte para agendar.
         </div>
       ) : (
         <div className="client-booking-steps">
+          {currentStepName === 'unit' && (
+            <div className="client-booking-step">
+              <label>Selecione o Pet Shop *</label>
+              <div className="unit-select-grid">
+                {linkedCompanies.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={'unit-select-btn' + (booking.companyId === c.id ? ' selected' : '')}
+                    onClick={() => updateBooking({ companyId: c.id, company: c, service: 'banho_tosa', date: '', time: '' })}
+                  >
+                    <span className="unit-name">{c.name}</span>
+                    {c.phone && <span className="unit-meta">{c.phone}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {currentStepName === 'pet' && (
             <div className="client-booking-step">
               <label>Selecione o pet *</label>
@@ -147,11 +213,11 @@ export default function ClientBookingFlow() {
             <div className="client-booking-step">
               <label>Selecione o serviço *</label>
               <select
-                value={booking.service}
-                onChange={(e) => updateBooking({ service: e.target.value })}
+                value={serviceOptions.some((s) => s.value === booking.service) ? booking.service : (serviceOptions[0]?.value || 'banho_tosa')}
+                onChange={(e) => updateBooking({ service: e.target.value, date: '', time: '' })}
                 className="service-select"
               >
-                {SERVICOS.map((s) => (
+                {(serviceOptions.length ? serviceOptions : SERVICOS).map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
               </select>
@@ -184,6 +250,21 @@ export default function ClientBookingFlow() {
               </div>
               {booking.date && (
                 <>
+                  {professionalOptions.length > 1 && (
+                    <div className="form-group-booking">
+                      <label>Profissional (opcional)</label>
+                      <select
+                        value={booking.professionalId || ''}
+                        onChange={(e) => updateBooking({ professionalId: e.target.value || null, time: '' })}
+                        className="service-select"
+                      >
+                        <option value="">Qualquer disponível</option>
+                        {professionalOptions.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <label>Horários disponíveis *</label>
                   {loadingSlots ? (
                     <p className="slots-loading">Carregando...</p>
@@ -210,13 +291,19 @@ export default function ClientBookingFlow() {
 
           {currentStepName === 'confirm' && (
             <div className="client-booking-step client-booking-confirm">
+              {booking.company && (
+                <div className="confirm-row">
+                  <span>Pet Shop:</span>
+                  <strong>{booking.company.name}</strong>
+                </div>
+              )}
               <div className="confirm-row">
                 <span>Pet:</span>
                 <strong>{booking.pet?.name || pets.find((p) => p.id === booking.petId)?.name || '-'}</strong>
               </div>
               <div className="confirm-row">
                 <span>Serviço:</span>
-                <strong>{SERVICOS.find((s) => s.value === booking.service)?.label || booking.service}</strong>
+                <strong>{(serviceOptions.length ? serviceOptions : SERVICOS).find((s) => s.value === booking.service)?.label || booking.service}</strong>
               </div>
               <div className="confirm-row">
                 <span>Data:</span>
@@ -244,7 +331,7 @@ export default function ClientBookingFlow() {
 
       {error && <div className="form-error-booking">{error}</div>}
 
-      {pets.length > 0 && (
+      {(linkedCompanies.length > 0 || booking.companyId) && (pets.length > 0 || currentStepName === 'unit') && (
         <div className="client-booking-actions">
           {step > 0 ? (
             <button type="button" className="btn-prev-booking" onClick={prevStep}>
@@ -255,12 +342,13 @@ export default function ClientBookingFlow() {
               Cancelar
             </Link>
           )}
-          {step < 3 ? (
+          {step < 4 ? (
             <button
               type="button"
               className="btn-next-booking"
               onClick={nextStep}
               disabled={
+                (currentStepName === 'unit' && !booking.companyId) ||
                 (currentStepName === 'pet' && !booking.petId) ||
                 (currentStepName === 'datetime' && (!booking.date || !booking.time))
               }

@@ -44,6 +44,7 @@ function seedDemoAppointments() {
       id: appointmentsState.appointmentIdCounter++,
       userId: 5,
       customerId: 1,
+      companyId: 'comp_1',
       petId: 1,
       professionalId,
       service,
@@ -84,9 +85,14 @@ router.get('/', authenticateToken, (req, res) => {
   const { date, professionalId, status, customerId } = req.query;
   let filteredAppointments = [...appointments];
 
+  // Gestão (company token): só agendamentos daquela unidade
+  if (req.companyId) {
+    filteredAppointments = filteredAppointments.filter((a) => a.companyId === req.companyId);
+  }
+
   // Se for cliente do app mobile, filtrar por userId
   if (req.user.userId && !professionalId && !date) {
-    filteredAppointments = appointments.filter(a => a.userId === req.user.userId);
+    filteredAppointments = filteredAppointments.filter(a => a.userId === req.user.userId);
   }
 
   // Filtro por data
@@ -179,7 +185,7 @@ router.post('/', [
   body('time').notEmpty().withMessage('Horário é obrigatório'),
   validate
 ], (req, res) => {
-  const { petId, service, date, time, notes, professionalId, customerId, userId: bodyUserId } = req.body;
+  const { petId, service, date, time, notes, professionalId, customerId, userId: bodyUserId, companyId: bodyCompanyId } = req.body;
 
   // Quando a gestão agenda em nome do cliente: usar userId do cliente para ele ver na área do cliente
   let userId = req.user.userId || null;
@@ -190,6 +196,9 @@ router.post('/', [
     const cust = getCustomerById(parseInt(customerId));
     if (cust && cust.userId != null) userId = cust.userId;
   }
+
+  // companyId: gestão usa req.companyId; cliente envia no body ao agendar por unidade
+  const companyId = req.companyId || bodyCompanyId || null;
 
   // Alocar profissional automaticamente se não especificado
   let assignedProfessionalId = professionalId;
@@ -231,6 +240,7 @@ router.post('/', [
     id: appointmentsState.appointmentIdCounter++,
     userId,
     customerId: customerId ? parseInt(customerId) : null,
+    companyId: companyId || null,
     petId: parseInt(petId),
     professionalId: assignedProfessionalId,
     service,
@@ -414,7 +424,7 @@ router.put('/:id', authenticateToken, (req, res) => {
   });
 });
 
-// Cancelar agendamento
+// Cancelar agendamento (cliente ou Pet Shop), com justificativa obrigatória
 router.delete('/:id', authenticateToken, (req, res) => {
   const appointment = appointments.find(a => a.id === parseInt(req.params.id));
 
@@ -422,34 +432,45 @@ router.delete('/:id', authenticateToken, (req, res) => {
     return res.status(404).json({ error: 'Agendamento não encontrado' });
   }
 
-  // Verificar permissão
-  if (appointment.userId && appointment.userId !== req.user.userId) {
+  const isCompanyCancel = req.companyId && appointment.companyId === req.companyId;
+  const isClientCancel = appointment.userId && appointment.userId === req.user.userId;
+
+  if (!isCompanyCancel && !isClientCancel) {
     return res.status(403).json({ error: 'Acesso negado' });
   }
 
-  // RN007/RN008: Verificar se pode cancelar
-  const isManager = ['master', 'manager'].includes(req.user.role);
-  const cancelCheck = canCancelAppointment(appointment, isManager);
-  
-  if (!cancelCheck.allowed) {
-    return res.status(400).json({
-      error: cancelCheck.reason,
-      requiresManager: cancelCheck.requiresManager,
-      hoursUntilAppointment: cancelCheck.hoursUntilAppointment,
-    });
+  const reason = (req.body && req.body.reason) ? String(req.body.reason).trim() : '';
+  if (!reason) {
+    return res.status(400).json({ error: 'Justificativa do cancelamento é obrigatória' });
+  }
+
+  // Cliente: regras de horário e taxa; Pet Shop: pode cancelar sempre (com justificativa)
+  if (!isCompanyCancel) {
+    const isManager = ['master', 'manager'].includes(req.user.role);
+    const cancelCheck = canCancelAppointment(appointment, isManager);
+    if (!cancelCheck.allowed) {
+      return res.status(400).json({
+        error: cancelCheck.reason,
+        requiresManager: cancelCheck.requiresManager,
+        hoursUntilAppointment: cancelCheck.hoursUntilAppointment,
+      });
+    }
   }
 
   const appointmentIndex = appointments.findIndex(a => a.id === parseInt(req.params.id));
+  const cancelCheck = isCompanyCancel ? { canChargeFee: false, feePercentage: 0 } : canCancelAppointment(appointment, ['master', 'manager'].includes(req.user.role));
+
   appointments[appointmentIndex].status = 'cancelled';
+  appointments[appointmentIndex].cancellation_reason = reason;
+  appointments[appointmentIndex].cancelled_by = isCompanyCancel ? 'company' : 'client';
+  appointments[appointmentIndex].cancelled_at = new Date();
   appointments[appointmentIndex].cancellationFee = cancelCheck.canChargeFee ? cancelCheck.feePercentage : 0;
   appointments[appointmentIndex].cancelledAt = new Date();
 
-  // TODO: Enviar notificação de cancelamento
-  // TODO: Aplicar taxa se necessário (cancelCheck.canChargeFee)
-
-  res.json({ 
+  res.json({
     message: 'Agendamento cancelado com sucesso',
     cancellationFee: cancelCheck.canChargeFee ? cancelCheck.feePercentage : 0,
+    feeMessage: cancelCheck.canChargeFee ? `Pode ser aplicada taxa de ${cancelCheck.feePercentage}% conforme política. Entre em contato para estorno/crédito.` : null,
   });
 });
 

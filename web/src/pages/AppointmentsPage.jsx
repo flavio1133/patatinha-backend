@@ -212,6 +212,17 @@ export default function AppointmentsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments'] }),
   });
 
+  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }) => appointmentsAPI.cancel(id, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setCancelModal(null);
+      setCancelReason('');
+    },
+  });
+
   const rawList = useMemo(() => {
     const fromApi = data?.appointments;
     if (data !== undefined && Array.isArray(fromApi)) return fromApi;
@@ -407,11 +418,39 @@ export default function AppointmentsPage() {
                 {canCheckIn(apt.status) && (
                   <button type="button" className="btn-icon" title="Check-in" onClick={() => checkInMutation.mutate(apt.id)}>✓</button>
                 )}
+                {apt.status !== 'cancelled' && apt.status !== 'completed' && (
+                  <button type="button" className="btn-icon btn-icon-cancel" title="Cancelar" onClick={() => { setCancelModal(apt); setCancelReason(''); }}>✕</button>
+                )}
               </div>
             </div>
           ))}
           </>
           )}
+        </div>
+      )}
+
+      {cancelModal && (
+        <div className="modal-overlay" onClick={() => !cancelMutation.isPending && setCancelModal(null)}>
+          <div className="modal-content modal-new-appointment" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancelar agendamento</h3>
+            <p className="modal-cancel-desc">
+              {cancelModal.petName} – {serviceLabel(cancelModal.service)} em {cancelModal.date} às {cancelModal.time}.
+            </p>
+            <label>Justificativa (obrigatória) *</label>
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Motivo do cancelamento pelo Pet Shop..."
+              rows={3}
+              style={{ width: '100%', padding: '10px', marginTop: '8px', borderRadius: '8px', border: '1px solid #404040', background: '#252525', color: '#e4e4e4' }}
+            />
+            <div className="modal-actions" style={{ marginTop: '20px' }}>
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setCancelModal(null)} disabled={cancelMutation.isPending}>Voltar</button>
+              <button type="button" className="ui-btn btn-admin-danger" onClick={() => { if (cancelReason.trim()) cancelMutation.mutate({ id: cancelModal.id, reason: cancelReason.trim() }); }} disabled={cancelMutation.isPending || !cancelReason.trim()}>
+                {cancelMutation.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
