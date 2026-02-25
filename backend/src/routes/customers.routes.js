@@ -6,7 +6,7 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const { users } = require('./auth.routes');
 const { logAudit } = require('../services/audit.service');
-const { Customer } = require('../db');
+const { Customer, ClientCompany } = require('../db');
 
 // Cache em memória + controle de IDs para compatibilidade
 const customers = [];
@@ -64,10 +64,24 @@ const validate = (req, res, next) => {
   next();
 };
 
-// Listar todos os clientes (com busca e filtros)
-router.get('/', authenticateToken, (req, res) => {
+// Listar clientes (com busca e filtros). Se req.companyId (gestor logado como empresa), apenas clientes vinculados à empresa.
+router.get('/', authenticateToken, async (req, res) => {
   const { search, phone, includeInactive } = req.query;
   let filteredCustomers = [...customers];
+
+  // Gestor logado como empresa: mostrar apenas clientes vinculados a esta empresa (ClientCompany)
+  if (req.companyId) {
+    try {
+      const links = await ClientCompany.findAll({
+        where: { company_id: req.companyId, is_active: true },
+        attributes: ['client_id'],
+      });
+      const linkedUserIds = new Set(links.map((l) => l.client_id));
+      filteredCustomers = filteredCustomers.filter((c) => linkedUserIds.has(c.userId));
+    } catch (err) {
+      console.error('Erro ao filtrar clientes por empresa:', err.message);
+    }
+  }
 
   // Por padrão ocultar inativos (soft delete); relatórios podem usar includeInactive=true
   if (!includeInactive) {

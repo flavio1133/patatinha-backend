@@ -86,6 +86,14 @@ export default function ClientBookingFlow() {
     return all.filter((s) => servicesOffered.includes(s.value));
   }, [servicesOffered]);
 
+  const { data: professionalsData } = useQuery({
+    queryKey: ['company-professionals', effectiveCompanyId],
+    queryFn: () => companiesAPI.getProfessionals(effectiveCompanyId),
+    enabled: !!effectiveCompanyId,
+    retry: false,
+  });
+  const companyProfessionals = professionalsData?.professionals || [];
+
   const getAvailabilityFn = (d, s) =>
     effectiveCompanyId
       ? companiesAPI.getAvailability(effectiveCompanyId, d, s).then((res) => res.data)
@@ -122,10 +130,11 @@ export default function ClientBookingFlow() {
     availabilityFiltered.forEach((a) => (a.availableSlots || []).forEach((t) => set.add(t)));
     return Array.from(set).sort();
   }, [availabilityFiltered]);
-  const professionalOptions = useMemo(
-    () => availability.map((a) => ({ id: a.professionalId, name: a.professionalName })),
-    [availability]
-  );
+  const professionalOptions = useMemo(() => {
+    const fromAvailability = availability.map((a) => ({ id: a.professionalId, name: a.professionalName }));
+    if (fromAvailability.length > 0) return fromAvailability;
+    return companyProfessionals.map((p) => ({ id: p.id, name: p.name }));
+  }, [availability, companyProfessionals]);
 
   const handleConfirm = () => {
     setError('');
@@ -225,6 +234,27 @@ export default function ClientBookingFlow() {
 
           {currentStepName === 'service' && (
             <div className="client-booking-step">
+              {booking.company && (
+                <div className="booking-step-company">
+                  <label>Pet Shop vinculado</label>
+                  <p className="booking-company-name">{booking.company.name}</p>
+                </div>
+              )}
+              {companyProfessionals.length > 0 && (
+                <div className="form-group-booking">
+                  <label>Profissional *</label>
+                  <select
+                    value={booking.professionalId || ''}
+                    onChange={(e) => updateBooking({ professionalId: e.target.value || null, date: '', time: '' })}
+                    className="service-select"
+                  >
+                    <option value="">Selecione o profissional</option>
+                    {companyProfessionals.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <label>Selecione o serviço *</label>
               <select
                 value={serviceOptions.some((s) => s.value === booking.service) ? booking.service : (serviceOptions[0]?.value || 'banho_tosa')}
@@ -240,6 +270,14 @@ export default function ClientBookingFlow() {
 
           {currentStepName === 'datetime' && (
             <div className="client-booking-step">
+              {booking.professionalId && professionalOptions.length > 0 && (
+                <div className="booking-step-company">
+                  <label>Profissional</label>
+                  <p className="booking-company-name">
+                    {professionalOptions.find((p) => String(p.id) === String(booking.professionalId))?.name || '—'}
+                  </p>
+                </div>
+              )}
               <label>Data *</label>
               <div className="calendar-grid-booking">
                 {calendarDays.map((d) => {
@@ -266,7 +304,7 @@ export default function ClientBookingFlow() {
                 <>
                   {professionalOptions.length > 1 && (
                     <div className="form-group-booking">
-                      <label>Profissional (opcional)</label>
+                      <label>Alterar profissional (opcional)</label>
                       <select
                         value={booking.professionalId || ''}
                         onChange={(e) => updateBooking({ professionalId: e.target.value || null, time: '' })}

@@ -17,6 +17,7 @@ const PAGE_TITLES = {
   '/cliente/galeria': 'Galeria',
   '/cliente/perfil': 'Perfil',
   '/cliente/notificacoes': 'Notificações',
+  '/cliente/codigo': 'Vincular Pet Shop',
 };
 
 function getInitials(name) {
@@ -79,6 +80,7 @@ export default function ClienteLayout({ children }) {
 
   const menuItems = [
     { to: '/cliente/home', label: 'Início', icon: '🏠' },
+    { to: '/cliente/pets', label: 'Pets', icon: '🐾' },
     { to: '/cliente/agendamentos', label: 'Agendamentos', icon: '📅' },
     { to: '/cliente/historico', label: 'Histórico', icon: '📋' },
     { to: '/cliente/galeria', label: 'Fotos', icon: '📷' },

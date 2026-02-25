@@ -223,6 +223,13 @@ export default function AppointmentsPage() {
     },
   });
 
+  const { data: professionalsData } = useQuery({
+    queryKey: ['professionals'],
+    queryFn: () => professionalsAPI.getAll().then((res) => res.data),
+    retry: 1,
+  });
+  const allProfessionals = professionalsData?.professionals || [];
+
   const rawList = useMemo(() => {
     const fromApi = data?.appointments;
     if (data !== undefined && Array.isArray(fromApi)) return fromApi;
@@ -232,7 +239,10 @@ export default function AppointmentsPage() {
     (a) => (!filterStatus || a.status === filterStatus) && (!filterPro || a.professionalName === filterPro)
   );
 
-  const professionals = useMemo(() => [...new Set(list.map((a) => a.professionalName).filter(Boolean))], [list]);
+  const professionalsFromList = useMemo(() => [...new Set(list.map((a) => a.professionalName).filter(Boolean))], [list]);
+  const professionals = allProfessionals.length > 0
+    ? allProfessionals.map((p) => ({ id: p.id, name: p.name }))
+    : professionalsFromList.map((name) => ({ id: name, name }));
 
   const weekDays = view === 'semana'
     ? eachDayOfInterval({ start: startOfWeek(selectedDate, { weekStartsOn: 0 }), end: endOfWeek(selectedDate, { weekStartsOn: 0 }) })
@@ -287,16 +297,24 @@ export default function AppointmentsPage() {
           ))}
         </div>
         <div className="agenda-filters">
+          <div className="agenda-view-mode">
+            <span className="agenda-view-label">Agenda:</span>
+            <select
+              value={filterPro}
+              onChange={(e) => setFilterPro(e.target.value)}
+              className="agenda-professional-select"
+              aria-label="Ver agenda principal ou por profissional"
+            >
+              <option value="">Principal (todos os atendimentos)</option>
+              {professionals.map((p) => (
+                <option key={p.id || p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">Todos status</option>
             {Object.entries(STATUS_API).map(([k, lbl]) => (
               <option key={k} value={k}>{lbl}</option>
-            ))}
-          </select>
-          <select value={filterPro} onChange={(e) => setFilterPro(e.target.value)}>
-            <option value="">Todos profissionais</option>
-            {professionals.map((p) => (
-              <option key={p} value={p}>{p}</option>
             ))}
           </select>
         </div>

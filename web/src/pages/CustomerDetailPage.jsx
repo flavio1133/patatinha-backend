@@ -4,6 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersAPI, petsAPI, appointmentsAPI } from '../services/api';
 import './CustomerDetailPage.css';
 
+const SPECIES_OPTIONS = [
+  { value: 'dog', label: 'Cachorro' },
+  { value: 'cat', label: 'Gato' },
+  { value: 'bird', label: 'Pássaro' },
+  { value: 'rabbit', label: 'Coelho' },
+  { value: 'other', label: 'Outro' },
+];
+
 const SERVICE_LABEL = { banho: 'Banho', tosa: 'Tosa', banho_tosa: 'Banho e Tosa', veterinario: 'Consulta', hotel: 'Hotel', outros: 'Outros' };
 const STATUS_LABEL = { confirmed: 'Confirmado', checked_in: 'Check-in', in_progress: 'Em andamento', completed: 'Concluído', cancelled: 'Cancelado' };
 const TABS = ['info', 'pets', 'agendamentos', 'faturamento', 'anotacoes'];
@@ -17,6 +25,8 @@ export default function CustomerDetailPage() {
   const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' });
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateReason, setDeactivateReason] = useState('');
+  const [addPetOpen, setAddPetOpen] = useState(false);
+  const [addPetForm, setAddPetForm] = useState({ name: '', species: 'dog', breed: '', age: '', birthDate: '' });
 
   const { data: customerData, isLoading: loadingCustomer } = useQuery({
     queryKey: ['customer', id],
@@ -63,6 +73,19 @@ export default function CustomerDetailPage() {
     },
     onError: (err) => {
       alert(err.response?.data?.error || err.message || 'Não foi possível desativar. Apenas Gestor ou Super Admin pode desativar.');
+    },
+  });
+
+  const addPetMutation = useMutation({
+    mutationFn: (body) => petsAPI.create(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['pets'] });
+      setAddPetOpen(false);
+      setAddPetForm({ name: '', species: 'dog', breed: '', age: '', birthDate: '' });
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Erro ao cadastrar pet.');
     },
   });
 
@@ -177,7 +200,12 @@ export default function CustomerDetailPage() {
         )}
         {activeTab === 'pets' && (
           <section>
-            <h3>Pets</h3>
+            <div className="pets-tab-header">
+              <h3>Pets</h3>
+              <button type="button" className="ui-btn ui-btn-primary-gestao btn-add-pet" onClick={() => setAddPetOpen(true)}>
+                + Adicionar pet
+              </button>
+            </div>
             <ul className="pets-list">
               {pets.length ? (
                 pets.map((pet) => (
@@ -190,6 +218,92 @@ export default function CustomerDetailPage() {
                 <li>Nenhum pet cadastrado.</li>
               )}
             </ul>
+            {addPetOpen && (
+              <div className="modal-overlay" onClick={() => !addPetMutation.isPending && setAddPetOpen(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                  <h3>Novo pet</h3>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!addPetForm.name.trim()) {
+                      alert('Nome do pet é obrigatório.');
+                      return;
+                    }
+                    const payload = {
+                      name: addPetForm.name.trim(),
+                      species: addPetForm.species,
+                      breed: addPetForm.breed.trim() || undefined,
+                      customerId: customer.id,
+                    };
+                    if (addPetForm.birthDate) payload.birthDate = addPetForm.birthDate;
+                    if (addPetForm.age !== '') payload.age = parseInt(addPetForm.age, 10);
+                    if (!payload.age && !payload.birthDate) {
+                      alert('Informe a idade ou a data de nascimento.');
+                      return;
+                    }
+                    addPetMutation.mutate(payload);
+                  }}>
+                    <div className="form-group">
+                      <label>Nome *</label>
+                      <input
+                        type="text"
+                        value={addPetForm.name}
+                        onChange={(e) => setAddPetForm((f) => ({ ...f, name: e.target.value }))}
+                        required
+                        placeholder="Nome do pet"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Espécie</label>
+                      <select
+                        value={addPetForm.species}
+                        onChange={(e) => setAddPetForm((f) => ({ ...f, species: e.target.value }))}
+                      >
+                        {SPECIES_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Raça</label>
+                      <input
+                        type="text"
+                        value={addPetForm.breed}
+                        onChange={(e) => setAddPetForm((f) => ({ ...f, breed: e.target.value }))}
+                        placeholder="Opcional"
+                      />
+                    </div>
+                    <div className="form-row" style={{ display: 'flex', gap: '12px' }}>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Idade (anos)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={addPetForm.age}
+                          onChange={(e) => setAddPetForm((f) => ({ ...f, age: e.target.value }))}
+                          placeholder="Ex: 3"
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Data nasc.</label>
+                        <input
+                          type="date"
+                          value={addPetForm.birthDate}
+                          onChange={(e) => setAddPetForm((f) => ({ ...f, birthDate: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="modal-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                      <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setAddPetOpen(false)}>
+                        Cancelar
+                      </button>
+                      <button type="submit" className="ui-btn ui-btn-primary-gestao" disabled={addPetMutation.isPending}>
+                        {addPetMutation.isPending ? 'Salvando...' : 'Cadastrar pet'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </section>
         )}
         {activeTab === 'agendamentos' && (

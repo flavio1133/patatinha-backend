@@ -245,6 +245,15 @@ router.get('/:id/public', (req, res) => {
   });
 });
 
+// Lista de profissionais da empresa (para cliente escolher no agendamento)
+router.get('/:id/professionals', (req, res) => {
+  const company = companies.find((c) => c.id === req.params.id);
+  if (!company) return res.status(404).json({ error: 'Empresa não encontrada' });
+  const { professionals } = require('./professionals.routes');
+  const active = (professionals || []).filter((p) => p.isActive && !p.deleted_at);
+  res.json({ professionals: active.map((p) => ({ id: p.id, name: p.name })) });
+});
+
 // Disponibilidade de horários para agendamento (público - cliente vinculado usa companyId)
 router.get('/:id/availability', (req, res) => {
   const company = companies.find((c) => c.id === req.params.id);
@@ -593,20 +602,20 @@ router.get('/:id/invitation-codes', authCompany, async (req, res) => {
   if (status) list = list.filter((c) => c.status === status);
   list = list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  // Enriquecer com nome/e-mail do cliente quando houver vínculo
-  // client_id armazena o ID do usuário de autenticação (auth.routes), que se
-  // relaciona com o cliente pela coluna customers.user_id
+  // Enriquecer com nome/e-mail do cliente quando houver vínculo (Customer ou users)
+  const { users: authUsers } = require('./auth.routes');
   const enriched = await Promise.all(list.map(async (inv) => {
-    if (!inv.client_id) return inv;
+    if (inv.client_id == null) return inv;
+    const cid = typeof inv.client_id === 'string' ? parseInt(inv.client_id, 10) : inv.client_id;
     try {
-      const customer = await Customer.findOne({ where: { userId: inv.client_id } });
-      if (!customer) return inv;
-      const plain = customer.get({ plain: true });
-      return {
-        ...inv,
-        client_name: plain.name,
-        client_email: plain.email,
-      };
+      const customer = await Customer.findOne({ where: { userId: cid } });
+      if (customer) {
+        const plain = customer.get({ plain: true });
+        return { ...inv, client_name: plain.name, client_email: plain.email };
+      }
+      const u = authUsers.find((x) => x.id === cid);
+      if (u) return { ...inv, client_name: u.name || 'Cliente', client_email: u.email || null };
+      return inv;
     } catch {
       return inv;
     }

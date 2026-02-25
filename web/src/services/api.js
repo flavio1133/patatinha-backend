@@ -25,7 +25,7 @@ api.interceptors.request.use(
       url.includes('/register') ||
       url.includes('/validate-cnpj') ||
       url.includes('/validate-invitation-code') ||
-      (url.includes('/companies/') && (url.includes('/availability') || url.endsWith('/public')));
+      (url.includes('/companies/') && (url.includes('/availability') || url.includes('/professionals') || url.endsWith('/public')));
 
     if (isPublic) {
       return config;
@@ -135,6 +135,8 @@ export const companiesAPI = {
     api.post(`/companies/${companyId}/invitation-codes/${code}/resend`),
   getPublic: (companyId) =>
     api.get(`/companies/${companyId}/public`),
+  getProfessionals: (companyId) =>
+    api.get(`/companies/${companyId}/professionals`).then((r) => r.data),
   getAvailability: (companyId, date, service) =>
     api.get(`/companies/${companyId}/availability`, { params: { date, service } }),
   updateSettings: (companyId, data) =>

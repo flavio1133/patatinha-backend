@@ -34,9 +34,49 @@
   background: #25D366;
   color: white;
 }
+.pets-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pets-tab-header h3 { margin: 0; }
+.btn-add-pet { flex-shrink: 0; }
 .pets-list { list-style: none; padding: 0; }
 .pets-list li { padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
 .pets-list a { color: #66bb6a; text-decoration: none; }
+.customer-detail .modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.customer-detail .modal-content {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+}
+.customer-detail .modal-content h3 { margin: 0 0 20px 0; color: #f0f0f0; }
+.customer-detail .modal-content .form-group { margin-bottom: 14px; }
+.customer-detail .modal-content .form-group label { display: block; margin-bottom: 6px; color: #b0b0b0; font-size: 0.9rem; }
+.customer-detail .modal-content .form-group input,
+.customer-detail .modal-content .form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f0f0f0;
+}
 .pet-meta { color: #808080; font-size: 0.9em; }
 .info-list { margin: 0; }
 .info-list dt { font-weight: 600; color: #c0c0c0; margin-top: 12px; }
