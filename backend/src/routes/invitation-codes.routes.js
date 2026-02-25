@@ -10,6 +10,7 @@ const { generateUniqueInvitationCode } = require('../utils/codeGenerator');
 const JWT_SECRET = process.env.JWT_SECRET || 'patatinha-secret-key-change-in-production';
 
 const { invitationCodes, clientCompanies, nextLinkId } = require('../data/invitation-codes.data');
+const { InvitationCode, ClientCompany } = require('../db');
 
 // Helpers
 function getCompanies() {
@@ -58,7 +59,7 @@ const validate = (req, res, next) => {
 // POST /api/validate-invitation-code - Validar código (cliente pode não estar logado)
 router.post('/validate-invitation-code', [
   body('code').trim().notEmpty().withMessage('Código não fornecido'),
-], validate, (req, res) => {
+], validate, async (req, res) => {
   const code = req.body.code.trim().toUpperCase();
   const invitation = invitationCodes.find((c) => c.code.toUpperCase() === code);
 
@@ -75,6 +76,16 @@ router.post('/validate-invitation-code', [
 
   if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
     invitation.status = 'expired';
+
+    // Persistir expiração no banco
+    try {
+      await InvitationCode.update(
+        { status: 'expired' },
+        { where: { id: invitation.id } },
+      );
+    } catch (err) {
+      console.error('Erro ao marcar código como expirado no banco:', err.message);
+    }
     return res.status(400).json({ valid: false, error: 'Código expirado' });
   }
 
@@ -119,7 +130,7 @@ router.get('/linked-companies', authClient, (req, res) => {
 // POST /api/link-client-to-company - Vincular cliente à empresa (requer auth cliente)
 router.post('/link-client-to-company', authClient, [
   body('invitationId').notEmpty().withMessage('ID do convite é obrigatório'),
-], validate, (req, res) => {
+], validate, async (req, res) => {
   const { invitationId } = req.body;
   const clientId = req.userId;
 
@@ -140,15 +151,43 @@ router.post('/link-client-to-company', authClient, [
   invitation.client_id = clientId;
   invitation.used_at = new Date();
 
+  // Persistir uso do código no banco
+  try {
+    await InvitationCode.update(
+      {
+        status: 'used',
+        client_id: clientId,
+        used_at: invitation.used_at,
+      },
+      { where: { id: invitation.id } },
+    );
+  } catch (err) {
+    console.error('Erro ao marcar código como usado no banco:', err.message);
+  }
+
   // Vincular cliente à empresa
-  clientCompanies.push({
+  const link = {
     id: nextLinkId(),
     client_id: clientId,
     company_id: invitation.company_id,
     linked_at: new Date(),
     linked_by: 'invitation',
     is_active: true,
-  });
+  };
+
+  clientCompanies.push(link);
+
+  try {
+    await ClientCompany.create({
+      client_id: link.client_id,
+      company_id: link.company_id,
+      linked_at: link.linked_at,
+      linked_by: link.linked_by,
+      is_active: link.is_active,
+    });
+  } catch (err) {
+    console.error('Erro ao criar vínculo cliente-empresa no banco:', err.message);
+  }
 
   res.json({ success: true, message: 'Cliente vinculado com sucesso', company_id: invitation.company_id });
 });

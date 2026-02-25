@@ -9,6 +9,7 @@ const fs = require('fs');
 const { validateCnpj, stripCnpj, formatCnpj } = require('../utils/cnpj-validator');
 const { generateUniqueInvitationCode } = require('../utils/codeGenerator');
 const { invitationCodes, nextCodeId } = require('../data/invitation-codes.data');
+const { Company, CompanySettings, CompanyEmployee, InvitationCode, ClientCompany, Customer } = require('../db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'patatinha-secret-key-change-in-production';
 
@@ -65,79 +66,127 @@ function requireCompanyOwner(req, res, next) {
 // Funções da empresa (funcionários)
 const COMPANY_ROLES = ['vendedor', 'atendente', 'tosador', 'gerente_loja'];
 
-// Dados em memória (TODO: migrar para banco)
+// Dados em memória usados como cache (populados a partir do banco)
 const companies = [];
 const companySettings = [];
 const companyEmployees = [];
 const companiesState = { companyIdCounter: 1, employeeIdCounter: 1 };
 
-// Empresa de teste (disponível em dev e produção para demonstração)
-function initTestCompany() {
-  if (companies.some((c) => c.email === 'contato@patatinha.com')) return;
-  const now = new Date();
-  const trialEnd = new Date(now);
-  trialEnd.setDate(trialEnd.getDate() + 15);
-  companies.push({
-    id: 'comp_1',
-    person_type: 'pj',
-    name: 'Patatinha Recife',
-    legal_name: 'Patatinha Pet Shop Ltda',
-    cnpj: '11.222.333/0001-81',
-    email: 'contato@patatinha.com',
-    password_hash: bcrypt.hashSync('demo123', 10),
-    phone: '(81) 3333-4444',
-    whatsapp: '(81) 99999-5555',
-    address: 'Rua do Pet, 100',
-    address_number: '100',
-    complement: 'Sala 1',
-    neighborhood: 'Boa Viagem',
-    city: 'Recife',
-    state: 'PE',
-    zip_code: '51020010',
-    logo_url: null,
-    website: 'https://patatinha.com.br',
-    instagram: '@patatinha.recife',
-    trial_start: now,
-    trial_end: trialEnd,
-    subscription_status: 'trial',
-    subscription_plan_id: null,
-    owner_is_active: true,
-    payment_customer_id: null,
-    payment_method: null,
-    created_at: now,
-    updated_at: now,
-  });
-  companySettings.push({
-    id: 'settings_comp_1',
-    company_id: 'comp_1',
-    opening_hours: {
-      monday: '08:00-18:00',
-      tuesday: '08:00-18:00',
-      wednesday: '08:00-18:00',
-      thursday: '08:00-18:00',
-      friday: '08:00-18:00',
-      saturday: '09:00-13:00',
-      sunday: 'Fechado',
-    },
-    services_offered: ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
-    enabled_modules: {
-      pdv: true,
-      finance: true,
-      inventory: true,
-      reports: true,
-    },
-    employees: [],
-    created_at: now,
-    updated_at: now,
-  });
-  companiesState.companyIdCounter = 2;
-  companyEmployees.push(
-    { id: 'emp_1', company_id: 'comp_1', name: 'João Vendedor', cpf: '12345678901', email: 'vendedor@patatinha.com', password_hash: bcrypt.hashSync('vendedor123', 10), role: 'vendedor', is_active: true, created_at: now },
-    { id: 'emp_2', company_id: 'comp_1', name: 'Maria Atendente', cpf: '98765432109', email: 'atendente@patatinha.com', password_hash: bcrypt.hashSync('atendente123', 10), role: 'atendente', is_active: true, created_at: now }
-  );
-  companiesState.employeeIdCounter = 3;
+async function hydrateCompaniesFromDatabase() {
+  try {
+    const rows = await Company.findAll({
+      include: [
+        { model: CompanySettings, as: 'settings' },
+        { model: CompanyEmployee, as: 'employees' },
+      ],
+      order: [['created_at', 'ASC']],
+    });
+
+    companies.length = 0;
+    companySettings.length = 0;
+    companyEmployees.length = 0;
+
+    if (rows.length === 0) {
+      // Primeiro run: criar empresa demo no banco
+      const now = new Date();
+      const trialEnd = new Date(now);
+      trialEnd.setDate(trialEnd.getDate() + 15);
+
+      const demoCompany = await Company.create({
+        id: 'comp_1',
+        person_type: 'pj',
+        name: 'Patatinha Recife',
+        legal_name: 'Patatinha Pet Shop Ltda',
+        cnpj: '11.222.333/0001-81',
+        email: 'contato@patatinha.com',
+        password_hash: bcrypt.hashSync('demo123', 10),
+        phone: '(81) 3333-4444',
+        whatsapp: '(81) 99999-5555',
+        address: 'Rua do Pet, 100',
+        address_number: '100',
+        complement: 'Sala 1',
+        neighborhood: 'Boa Viagem',
+        city: 'Recife',
+        state: 'PE',
+        zip_code: '51020010',
+        logo_url: null,
+        website: 'https://patatinha.com.br',
+        instagram: '@patatinha.recife',
+        trial_start: now,
+        trial_end: trialEnd,
+        subscription_status: 'trial',
+        subscription_plan_id: null,
+        owner_is_active: true,
+        payment_customer_id: null,
+        payment_method: null,
+      });
+
+      await CompanySettings.create({
+        id: 'settings_comp_1',
+        company_id: demoCompany.id,
+        opening_hours: {
+          monday: '08:00-18:00',
+          tuesday: '08:00-18:00',
+          wednesday: '08:00-18:00',
+          thursday: '08:00-18:00',
+          friday: '08:00-18:00',
+          saturday: '09:00-13:00',
+          sunday: 'Fechado',
+        },
+        services_offered: ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
+        enabled_modules: {
+          pdv: true,
+          finance: true,
+          inventory: true,
+          reports: true,
+        },
+      });
+
+      const now2 = new Date();
+      await CompanyEmployee.bulkCreate([
+        { id: 'emp_1', company_id: demoCompany.id, name: 'João Vendedor', cpf: '12345678901', email: 'vendedor@patatinha.com', password_hash: bcrypt.hashSync('vendedor123', 10), role: 'vendedor', is_active: true, created_at: now2 },
+        { id: 'emp_2', company_id: demoCompany.id, name: 'Maria Atendente', cpf: '98765432109', email: 'atendente@patatinha.com', password_hash: bcrypt.hashSync('atendente123', 10), role: 'atendente', is_active: true, created_at: now2 },
+      ]);
+
+      rows.push(await Company.findOne({
+        where: { id: demoCompany.id },
+        include: [
+          { model: CompanySettings, as: 'settings' },
+          { model: CompanyEmployee, as: 'employees' },
+        ],
+      }));
+    }
+
+    for (const row of rows) {
+      const plain = row.get({ plain: true });
+      const { settings, employees, ...company } = plain;
+      companies.push(company);
+      if (settings) {
+        companySettings.push(settings);
+      }
+      if (employees && employees.length) {
+        companyEmployees.push(...employees);
+      }
+    }
+
+    // Atualizar contadores para próximos IDs "emp_n" e "comp_n"
+    const lastCompany = companies[companies.length - 1];
+    const lastEmp = companyEmployees[companyEmployees.length - 1];
+    const lastCompNum = lastCompany?.id?.startsWith('comp_')
+      ? parseInt(lastCompany.id.split('_')[1], 10)
+      : 1;
+    const lastEmpNum = lastEmp?.id?.startsWith('emp_')
+      ? parseInt(lastEmp.id.split('_')[1], 10)
+      : 1;
+    companiesState.companyIdCounter = Number.isNaN(lastCompNum) ? 1 : lastCompNum + 1;
+    companiesState.employeeIdCounter = Number.isNaN(lastEmpNum) ? 1 : lastEmpNum + 1;
+  } catch (err) {
+    console.error('Erro ao carregar empresas do banco:', err.message);
+  }
 }
-initTestCompany();
+
+// Carregar empresas ao subir o módulo (não bloqueia o servidor)
+hydrateCompaniesFromDatabase();
 
 function generateId() {
   return 'comp_' + companiesState.companyIdCounter++;
@@ -367,22 +416,9 @@ router.post('/register', [
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 15);
 
-  const personType = (req.body.person_type || 'pj').toLowerCase();
-  const cpfClean = stripCpf(req.body.cpf);
-  if (personType === 'pf') {
-    if (!cpfClean) {
-      return res.status(400).json({ error: 'CPF é obrigatório para Pessoa Física' });
-    }
-    if (!validateCpfDigits(cpfClean)) {
-      return res.status(400).json({ error: 'CPF inválido' });
-    }
-    if (companies.some((c) => c.person_type === 'pf' && stripCpf(c.cpf) === cpfClean)) {
-      return res.status(400).json({ error: 'CPF já cadastrado' });
-    }
-  }
-
+  const companyId = generateId();
   const company = {
-    id: generateId(),
+    id: companyId,
     person_type: personType,
     cpf: personType === 'pf' ? cpfClean : null,
     name: req.body.name.trim(),
@@ -413,11 +449,12 @@ router.post('/register', [
     updated_at: now,
   };
 
-  companies.push(company);
+  // Persistir no banco
+  await Company.create(company);
 
   const settings = {
-    id: `settings_${company.id}`,
-    company_id: company.id,
+    id: `settings_${companyId}`,
+    company_id: companyId,
     opening_hours: req.body.opening_hours || {},
     services_offered: req.body.services_offered || ['banho', 'tosa', 'banho_tosa', 'veterinario', 'vacina'],
     enabled_modules: {
@@ -430,10 +467,21 @@ router.post('/register', [
     created_at: now,
     updated_at: now,
   };
+
+  await CompanySettings.create({
+    id: settings.id,
+    company_id: settings.company_id,
+    opening_hours: settings.opening_hours,
+    services_offered: settings.services_offered,
+    enabled_modules: settings.enabled_modules,
+  });
+
+  // Atualizar cache em memória
+  companies.push(company);
   companySettings.push(settings);
 
   const token = jwt.sign(
-    { id: company.id, type: 'company', role: 'owner' },
+    { id: companyId, type: 'company', role: 'owner' },
     JWT_SECRET,
     { expiresIn: '30d' }
   );
@@ -467,8 +515,9 @@ router.post('/:id/employees', authCompany, requireCompanyOwner, [
   const exists = companyEmployees.some((e) => e.email.toLowerCase() === email.toLowerCase() && e.company_id === req.companyId && e.is_active);
   if (exists) return res.status(400).json({ error: 'E-mail já cadastrado nesta empresa' });
   const password_hash = await bcrypt.hash(password.trim(), 10);
+  const empId = 'emp_' + companiesState.employeeIdCounter++;
   const emp = {
-    id: 'emp_' + companiesState.employeeIdCounter++,
+    id: empId,
     company_id: req.companyId,
     name: name.trim(),
     cpf: cpf.replace(/\D/g, ''),
@@ -478,7 +527,13 @@ router.post('/:id/employees', authCompany, requireCompanyOwner, [
     is_active: true,
     created_at: new Date(),
   };
+
+  // Persistir no banco
+  await CompanyEmployee.create(emp);
+
+  // Atualizar cache
   companyEmployees.push(emp);
+
   const { password_hash: _ph, ...safe } = emp;
   res.status(201).json({ message: 'Funcionário cadastrado', employee: safe });
 });
@@ -488,11 +543,20 @@ router.delete('/:id/employees/:empId', authCompany, requireCompanyOwner, (req, r
   const idx = companyEmployees.findIndex((e) => e.id === req.params.empId && e.company_id === req.companyId);
   if (idx === -1) return res.status(404).json({ error: 'Funcionário não encontrado' });
   companyEmployees[idx].is_active = false;
+
+  // Atualizar no banco (soft delete)
+  CompanyEmployee.update(
+    { is_active: false },
+    { where: { id: companyEmployees[idx].id } },
+  ).catch((err) => {
+    console.error('Erro ao desativar funcionário no banco:', err.message);
+  });
+
   res.json({ message: 'Funcionário excluído' });
 });
 
 // --- Códigos de convite ---
-router.post('/:id/invitation-codes', authCompany, requireCompanyOwner, (req, res) => {
+router.post('/:id/invitation-codes', authCompany, requireCompanyOwner, async (req, res) => {
   if (req.params.id !== req.companyId) return res.status(403).json({ error: 'Acesso negado' });
   try {
     const code = generateUniqueInvitationCode(invitationCodes, 8);
@@ -508,27 +572,51 @@ router.post('/:id/invitation-codes', authCompany, requireCompanyOwner, (req, res
       used_at: null,
       created_at: new Date(),
     };
+
+    // Persistir no banco
+    await InvitationCode.create(inv);
+
+    // Atualizar cache em memória
     invitationCodes.push(inv);
+
     res.status(201).json({ message: 'Código gerado', invitation: inv });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/:id/invitation-codes', authCompany, (req, res) => {
+router.get('/:id/invitation-codes', authCompany, async (req, res) => {
   if (req.params.id !== req.companyId) return res.status(403).json({ error: 'Acesso negado' });
   const status = req.query.status;
   const fullList = invitationCodes.filter((c) => c.company_id === req.companyId);
   let list = fullList;
   if (status) list = list.filter((c) => c.status === status);
   list = list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Enriquecer com nome/e-mail do cliente quando houver vínculo
+  const enriched = await Promise.all(list.map(async (inv) => {
+    if (!inv.client_id) return inv;
+    try {
+      const customer = await Customer.findByPk(inv.client_id);
+      if (!customer) return inv;
+      const plain = customer.get({ plain: true });
+      return {
+        ...inv,
+        client_name: plain.name,
+        client_email: plain.email,
+      };
+    } catch {
+      return inv;
+    }
+  }));
+
   const stats = {
     total: fullList.length,
     available: fullList.filter((c) => c.status === 'available').length,
     used: fullList.filter((c) => c.status === 'used').length,
     expired: fullList.filter((c) => c.status === 'expired').length,
   };
-  res.json({ codes: list, stats });
+  res.json({ codes: enriched, stats });
 });
 
 router.post('/:id/invitation-codes/:code/resend', authCompany, requireCompanyOwner, (req, res) => {
