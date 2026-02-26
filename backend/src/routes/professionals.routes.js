@@ -1,385 +1,608 @@
-const express = require('express');
-const router = express.Router();
-const { body, validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
-const { authenticateToken } = require('../middleware/auth.middleware');
-const { requireRole } = require('../middleware/role.middleware');
-const { users } = require('./auth.routes');
-const { logAudit } = require('../services/audit.service');
+const { Sequelize, DataTypes } = require('sequelize');
 
-// TODO: Implementar conexão com banco de dados
-const professionals = [];
-const state = { professionalIdCounter: 1 };
+const {
+  DB_HOST = 'localhost',
+  DB_PORT = 5432,
+  DB_NAME = 'patatinha_db',
+  DB_USER = 'postgres',
+  DB_PASSWORD = 'postgres',
+  NODE_ENV,
+} = process.env;
 
-// Profissionais fictícios para a Patatinha Recife (agenda e alocação)
-const demoProfessionals = [
-  {
-    id: state.professionalIdCounter++,
-    name: 'Ana Souza',
-    specialties: ['banho', 'tosa', 'banho_tosa'],
-    roles: ['tosador', 'banhista'],
-    averageSpeed: 60,
-    workSchedule: { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
-    daysOff: ['sunday'],
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: state.professionalIdCounter++,
-    name: 'Carlos Lima',
-    specialties: ['veterinario', 'banho', 'outros'],
-    roles: ['veterinario'],
-    averageSpeed: 45,
-    workSchedule: { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
-    daysOff: [],
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: state.professionalIdCounter++,
-    name: 'Mariana Costa',
-    specialties: ['banho', 'tosa', 'banho_tosa'],
-    roles: ['banhista', 'recepcionista'],
-    averageSpeed: 55,
-    workSchedule: { start: '09:00', end: '17:00', lunchStart: '12:00', lunchEnd: '13:00' },
-    daysOff: ['saturday', 'sunday'],
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
-demoProfessionals.forEach((p) => professionals.push(p));
-
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
-
-// Listar todos os profissionais (por padrão apenas ativos)
-router.get('/', authenticateToken, (req, res) => {
-  const { includeInactive } = req.query;
-  let list = professionals;
-  if (!includeInactive) {
-    list = list.filter(p => p.isActive !== false && !p.deleted_at);
-  }
-  res.json({ professionals: list });
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+  host: DB_HOST,
+  port: DB_PORT,
+  dialect: 'postgres',
+  logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
 });
 
-// Obter profissional específico
-router.get('/:id', authenticateToken, (req, res) => {
-  const professional = professionals.find(p => p.id === parseInt(req.params.id));
-  
-  if (!professional) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  res.json(professional);
+// Empresas (dados principais)
+const Company = sequelize.define('Company', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  person_type: {
+    type: DataTypes.ENUM('pf', 'pj'),
+    allowNull: false,
+  },
+  cpf: {
+    type: DataTypes.STRING(14),
+    allowNull: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  legal_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  cnpj: {
+    type: DataTypes.STRING(18),
+    allowNull: true,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  password_hash: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  phone: DataTypes.STRING,
+  whatsapp: DataTypes.STRING,
+  address: DataTypes.STRING,
+  address_number: DataTypes.STRING,
+  complement: DataTypes.STRING,
+  neighborhood: DataTypes.STRING,
+  city: DataTypes.STRING,
+  state: DataTypes.STRING,
+  zip_code: DataTypes.STRING,
+  logo_url: DataTypes.STRING,
+  website: DataTypes.STRING,
+  instagram: DataTypes.STRING,
+  owner_is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  trial_start: DataTypes.DATE,
+  trial_end: DataTypes.DATE,
+  subscription_status: {
+    type: DataTypes.STRING,
+    defaultValue: 'trial',
+  },
+  subscription_plan_id: DataTypes.STRING,
+  payment_customer_id: DataTypes.STRING,
+  payment_method: DataTypes.STRING,
+}, {
+  tableName: 'companies',
+  underscored: true,
 });
 
-// Criar novo profissional
-router.post('/', [
-  authenticateToken,
-  body('name').trim().notEmpty().withMessage('Nome é obrigatório'),
-  body('specialties').isArray().withMessage('Especialidades devem ser um array'),
-  validate
-], (req, res) => {
-  const {
-    name,
-    specialties, // ['banho', 'tosa', 'gatos', 'caes_grandes']
-    averageSpeed, // minutos por serviço
-    workSchedule, // { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' }
-    daysOff, // ['sunday', 'monday']
-    isActive = true,
-    email,
-    phone,
-    permissions,
-    roles, // ['tosador', 'banhista', 'veterinario', 'auxiliar', 'recepcionista', 'vendedor', 'gerente']
-  } = req.body;
+// Configurações da empresa (horário, módulos, etc.)
+const CompanySettings = sequelize.define('CompanySettings', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  company_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  opening_hours: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {},
+  },
+  services_offered: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: false,
+    defaultValue: [],
+  },
+  enabled_modules: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: {
+      pdv: true,
+      finance: true,
+      inventory: true,
+      reports: true,
+    },
+  },
+}, {
+  tableName: 'company_settings',
+  underscored: true,
+});
 
-  const validRoles = ['tosador', 'banhista', 'veterinario', 'auxiliar', 'recepcionista', 'vendedor', 'gerente'];
-  const sanitizedRoles = Array.isArray(roles)
-    ? roles.filter((r) => validRoles.includes(r))
-    : [];
+// Funcionários da empresa (login próprio da empresa, não o Auth global)
+const CompanyEmployee = sequelize.define('CompanyEmployee', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  company_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  cpf: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  password_hash: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+}, {
+  tableName: 'company_employees',
+  underscored: true,
+});
 
-  const newProfessional = {
-    id: state.professionalIdCounter++,
-    name,
-    specialties: specialties || [],
-    roles: sanitizedRoles,
-    averageSpeed: averageSpeed || 60, // padrão 60 minutos
-    workSchedule: workSchedule || {
+Company.hasOne(CompanySettings, { foreignKey: 'company_id', as: 'settings' });
+CompanySettings.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+Company.hasMany(CompanyEmployee, { foreignKey: 'company_id', as: 'employees' });
+CompanyEmployee.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
+// Clientes
+const Customer = sequelize.define('Customer', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  address: DataTypes.STRING,
+  notes: DataTypes.TEXT,
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'user_id',
+  },
+  photo: DataTypes.STRING,
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  deleted_at: DataTypes.DATE,
+}, {
+  tableName: 'customers',
+  underscored: true,
+});
+
+// Pets
+const Pet = sequelize.define('Pet', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'user_id',
+  },
+  customerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'customer_id',
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  breed: DataTypes.STRING,
+  age: DataTypes.INTEGER,
+  birthDate: {
+    type: DataTypes.STRING,
+    field: 'birth_date',
+  },
+  species: DataTypes.STRING,
+  color: DataTypes.STRING,
+  weight: DataTypes.FLOAT,
+  photo: DataTypes.STRING,
+  importantInfo: {
+    type: DataTypes.TEXT,
+    field: 'important_info',
+  },
+  behaviorAlerts: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    field: 'behavior_alerts',
+  },
+  groomingPreferences: {
+    type: DataTypes.JSONB,
+    field: 'grooming_preferences',
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+  deleted_at: DataTypes.DATE,
+}, {
+  tableName: 'pets',
+  underscored: true,
+});
+
+Customer.hasMany(Pet, { foreignKey: 'customer_id', as: 'pets' });
+Pet.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
+// Produtos (estoque)
+const Product = sequelize.define('Product', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  brand: DataTypes.STRING,
+  sku: DataTypes.STRING,
+  category: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  price: DataTypes.FLOAT,
+  stock: DataTypes.INTEGER,
+  minStock: {
+    type: DataTypes.INTEGER,
+    field: 'min_stock',
+  },
+  sellByWeight: {
+    type: DataTypes.BOOLEAN,
+    field: 'sell_by_weight',
+  },
+  stockWeight: {
+    type: DataTypes.FLOAT,
+    field: 'stock_weight',
+  },
+  minStockWeight: {
+    type: DataTypes.FLOAT,
+    field: 'min_stock_weight',
+  },
+  pricePerKg: {
+    type: DataTypes.FLOAT,
+    field: 'price_per_kg',
+  },
+  isConsumable: {
+    type: DataTypes.BOOLEAN,
+    field: 'is_consumable',
+  },
+  volume: DataTypes.FLOAT,
+  cost: DataTypes.FLOAT,
+  yieldPerService: {
+    type: DataTypes.FLOAT,
+    field: 'yield_per_service',
+  },
+  unit: DataTypes.STRING,
+}, {
+  tableName: 'products',
+  underscored: true,
+});
+
+// Vendas
+const Sale = sequelize.define('Sale', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  customerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'customer_id',
+  },
+  appointmentId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'appointment_id',
+  },
+  items: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+  },
+  subtotal: DataTypes.FLOAT,
+  discount: DataTypes.FLOAT,
+  total: DataTypes.FLOAT,
+  paymentMethod: {
+    type: DataTypes.STRING,
+    field: 'payment_method',
+  },
+  cashAmount: {
+    type: DataTypes.FLOAT,
+    field: 'cash_amount',
+  },
+  change: DataTypes.FLOAT,
+  notes: DataTypes.TEXT,
+  date: DataTypes.STRING,
+  time: DataTypes.STRING,
+}, {
+  tableName: 'sales',
+  underscored: true,
+});
+
+// Agendamentos
+const Appointment = sequelize.define('Appointment', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'user_id',
+  },
+  customerId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'customer_id',
+  },
+  companyId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'company_id',
+  },
+  petId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'pet_id',
+  },
+  professionalId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'professional_id',
+  },
+  service: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  date: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  time: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  duration: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  notes: DataTypes.TEXT,
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'confirmed',
+  },
+  checkInTime: {
+    type: DataTypes.DATE,
+    field: 'check_in_time',
+  },
+  checkOutTime: {
+    type: DataTypes.DATE,
+    field: 'check_out_time',
+  },
+  estimatedCompletionTime: {
+    type: DataTypes.DATE,
+    field: 'estimated_completion_time',
+  },
+  cancellation_reason: DataTypes.TEXT,
+  cancelled_by: DataTypes.STRING,
+  cancelled_at: DataTypes.DATE,
+  cancellationFee: {
+    type: DataTypes.FLOAT,
+    field: 'cancellation_fee',
+  },
+}, {
+  tableName: 'appointments',
+  underscored: true,
+});
+
+// Códigos de convite
+const InvitationCode = sequelize.define('InvitationCode', {
+  id: {
+    type: DataTypes.STRING,
+    primaryKey: true,
+  },
+  company_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  code: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  client_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'available',
+  },
+  expires_at: DataTypes.DATE,
+  used_at: DataTypes.DATE,
+}, {
+  tableName: 'invitation_codes',
+  underscored: true,
+});
+
+// Vínculo cliente-empresa (via convite ou outros meios)
+const ClientCompany = sequelize.define('ClientCompany', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  client_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
+  company_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  linked_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  linked_by: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'invitation',
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+  },
+}, {
+  tableName: 'client_companies',
+  underscored: true,
+});
+
+// =====================================================
+// PROFISSIONAIS (funcionários que atendem)
+// =====================================================
+const Professional = sequelize.define('Professional', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    unique: true,
+  },
+  password_hash: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  phone: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  specialties: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
+  roles: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
+  averageSpeed: {
+    type: DataTypes.INTEGER,
+    defaultValue: 60,
+    field: 'average_speed',
+  },
+  workSchedule: {
+    type: DataTypes.JSONB,
+    defaultValue: {
       start: '08:00',
       end: '18:00',
       lunchStart: '12:00',
-      lunchEnd: '13:00',
+      lunchEnd: '13:00'
     },
-    daysOff: daysOff || [],
-    email: email || null,
-    phone: phone || null,
-    userId: null,
-    permissions: permissions || {
+    field: 'work_schedule',
+  },
+  daysOff: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+    field: 'days_off',
+  },
+  permissions: {
+    type: DataTypes.JSONB,
+    defaultValue: {
       canViewAgenda: true,
       canEditAgenda: true,
       canEditInventory: false,
       canViewFinance: false,
     },
-    isActive,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deleted_at: null,
-  };
-
-  professionals.push(newProfessional);
-  res.status(201).json({
-    message: 'Profissional cadastrado com sucesso',
-    professional: newProfessional,
-  });
+  },
+  userId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'user_id',
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_active',
+  },
+  companyId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'company_id',
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'created_at',
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'updated_at',
+  },
+  deleted_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'deleted_at',
+  },
+}, {
+  tableName: 'professionals',
+  underscored: true,
+  paranoid: true, // soft delete com deleted_at
 });
 
-// Atualizar profissional
-router.put('/:id', authenticateToken, (req, res) => {
-  const professionalIndex = professionals.findIndex(
-    p => p.id === parseInt(req.params.id)
-  );
+// Associações (opcional)
+// Professional.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+// Professional.hasMany(Appointment, { foreignKey: 'professional_id', as: 'appointments' });
 
-  if (professionalIndex === -1) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  professionals[professionalIndex] = {
-    ...professionals[professionalIndex],
-    ...req.body,
-    updatedAt: new Date(),
-  };
-
-  res.json({
-    message: 'Profissional atualizado com sucesso',
-    professional: professionals[professionalIndex],
-  });
-});
-
-// Atualizar permissões de um profissional
-router.put('/:id/permissions', authenticateToken, (req, res) => {
-  const professionalIndex = professionals.findIndex(
-    p => p.id === parseInt(req.params.id)
-  );
-
-  if (professionalIndex === -1) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  professionals[professionalIndex].permissions = {
-    ...(professionals[professionalIndex].permissions || {}),
-    ...(req.body || {}),
-  };
-  professionals[professionalIndex].updatedAt = new Date();
-
-  res.json({
-    message: 'Permissões atualizadas com sucesso',
-    permissions: professionals[professionalIndex].permissions,
-  });
-});
-
-// Criar login/senha para profissional (senha padrão 123456)
-router.post('/:id/create-login', authenticateToken, async (req, res) => {
-  const professional = professionals.find(p => p.id === parseInt(req.params.id));
-
-  if (!professional) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  if (!professional.email) {
-    return res.status(400).json({ error: 'Profissional precisa ter e-mail para criar acesso' });
-  }
-
-  const emailLower = professional.email.trim().toLowerCase();
-  let user = users.find(u => u.email && u.email.toLowerCase() === emailLower);
-
-  if (!user) {
-    const hashedPassword = await bcrypt.hash('123456', 10);
-    user = {
-      id: users.length + 1,
-      name: professional.name,
-      email: professional.email,
-      password: hashedPassword,
-      phone: professional.phone || null,
-      role: 'employee',
-      createdAt: new Date(),
-    };
-    users.push(user);
-  }
-
-  professional.userId = user.id;
-  professional.updatedAt = new Date();
-
-  res.json({
-    message: 'Acesso criado/atualizado com sucesso',
-    professional: {
-      id: professional.id,
-      name: professional.name,
-      email: professional.email,
-      phone: professional.phone,
-      userId: professional.userId,
-    },
-    credentials: {
-      login: professional.email,
-      password: '123456',
-    },
-  });
-});
-
-// Desativar profissional (soft delete) – apenas Gestor ou Super Admin; motivo obrigatório
-router.delete('/:id', [
-  authenticateToken,
-  requireRole('master', 'manager', 'super_admin'),
-  body('reason').trim().notEmpty().withMessage('Motivo da desativação é obrigatório'),
-], (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const professionalIndex = professionals.findIndex(
-    p => p.id === parseInt(req.params.id)
-  );
-
-  if (professionalIndex === -1) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  const professional = professionals[professionalIndex];
-  if (professional.isActive === false || professional.deleted_at) {
-    return res.status(400).json({ error: 'Profissional já está desativado' });
-  }
-
-  const reason = req.body.reason.trim();
-  const oldSnapshot = { ...professional };
-
-  professionals[professionalIndex].isActive = false;
-  professionals[professionalIndex].deleted_at = new Date();
-  professionals[professionalIndex].updatedAt = new Date();
-
-  logAudit({
-    userId: req.user.userId || req.user.id,
-    userName: req.user.name || req.user.email || 'Usuário',
-    userRole: req.user.role || 'unknown',
-    action: 'deactivate',
-    entity: 'professional',
-    entityId: professional.id,
-    oldValue: oldSnapshot,
-    newValue: { ...professionals[professionalIndex] },
-    reason,
-  });
-
-  res.json({
-    message: 'Profissional desativado com sucesso. O histórico de agendamentos foi preservado.',
-    professional: professionals[professionalIndex],
-  });
-});
-
-// Obter disponibilidade de um profissional em uma data
-router.get('/:id/availability', authenticateToken, (req, res) => {
-  const { date } = req.query;
-  
-  if (!date) {
-    return res.status(400).json({ error: 'Data é obrigatória' });
-  }
-
-  const professional = professionals.find(p => p.id === parseInt(req.params.id));
-  if (!professional) {
-    return res.status(404).json({ error: 'Profissional não encontrado' });
-  }
-
-  // Buscar agendamentos do profissional na data
-  const appointments = require('./appointments.routes').getAppointmentsByProfessionalAndDate(
-    parseInt(req.params.id),
-    date
-  );
-
-  // Calcular horários disponíveis
-  const availableSlots = calculateAvailableSlots(
-    professional,
-    date,
-    appointments
-  );
-
-  res.json({
-    professional: professional.name,
-    date,
-    availableSlots,
-    appointments: appointments.length,
-  });
-});
-
-// Função auxiliar para calcular horários disponíveis
-function calculateAvailableSlots(professional, date, existingAppointments) {
-  const slots = [];
-  const workStart = professional.workSchedule.start; // '08:00'
-  const workEnd = professional.workSchedule.end; // '18:00'
-  const lunchStart = professional.workSchedule.lunchStart; // '12:00'
-  const lunchEnd = professional.workSchedule.lunchEnd; // '13:00'
-
-  // Converter para minutos do dia
-  const startMinutes = timeToMinutes(workStart);
-  const endMinutes = timeToMinutes(workEnd);
-  const lunchStartMinutes = timeToMinutes(lunchStart);
-  const lunchEndMinutes = timeToMinutes(lunchEnd);
-
-  // Criar slots de 30 em 30 minutos
-  for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
-    // Pular horário de almoço
-    if (minutes >= lunchStartMinutes && minutes < lunchEndMinutes) {
-      continue;
-    }
-
-    const slotTime = minutesToTime(minutes);
-    const isAvailable = !isSlotOccupied(slotTime, existingAppointments);
-    
-    slots.push({
-      time: slotTime,
-      available: isAvailable,
-    });
-  }
-
-  return slots;
-}
-
-function timeToMinutes(time) {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
-function minutesToTime(minutes) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-}
-
-function isSlotOccupied(slotTime, appointments) {
-  // Verificar se algum agendamento ocupa este slot
-  // Considerar duração do serviço e buffer de 5 minutos antes/depois
-  return appointments.some(apt => {
-    const aptStart = timeToMinutes(apt.time);
-    const aptEnd = aptStart + (apt.duration || 60);
-    const slotMinutes = timeToMinutes(slotTime);
-    
-    // Slot ocupado se está dentro do intervalo do agendamento
-    // ou dentro do buffer de 5 minutos
-    return slotMinutes >= aptStart - 5 && slotMinutes < aptEnd + 5;
-  });
-}
-
-// Função auxiliar para buscar profissional por ID
-function getProfessionalById(id) {
-  return professionals.find(p => p.id === id);
-}
-
-module.exports = router;
-module.exports.getProfessionalById = getProfessionalById;
-module.exports.professionals = professionals;
-module.exports.professionalsState = state;
+module.exports = {
+  sequelize,
+  Company,
+  CompanySettings,
+  CompanyEmployee,
+  Customer,
+  Pet,
+  Appointment,
+  Product,
+  Sale,
+  InvitationCode,
+  ClientCompany,
+  Professional,
+};

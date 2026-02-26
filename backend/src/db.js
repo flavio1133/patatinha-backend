@@ -16,6 +16,10 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
 });
 
+// =====================================================
+// MODELOS EXISTENTES (mantidos exatamente como estavam)
+// =====================================================
+
 // Empresas (dados principais)
 const Company = sequelize.define('Company', {
   id: {
@@ -489,6 +493,88 @@ const ClientCompany = sequelize.define('ClientCompany', {
   underscored: true,
 });
 
+// =====================================================
+// NOVO MODELO: PROFISSIONAL (funcionários que atendem)
+// =====================================================
+const Professional = sequelize.define('Professional', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    unique: true,
+  },
+  password_hash: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+  },
+  phone: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  specialties: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
+  averageSpeed: {
+    type: DataTypes.INTEGER,
+    defaultValue: 60,
+    field: 'average_speed',
+  },
+  workSchedule: {
+    type: DataTypes.JSONB,
+    defaultValue: {
+      start: '08:00',
+      end: '18:00',
+      lunchStart: '12:00',
+      lunchEnd: '13:00'
+    },
+    field: 'work_schedule',
+  },
+  daysOff: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+    field: 'days_off',
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_active',
+  },
+  companyId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    field: 'company_id',
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'created_at',
+  },
+  updatedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    field: 'updated_at',
+  },
+}, {
+  tableName: 'professionals',
+  underscored: true,
+});
+
+// Associações (opcionais, você pode adicionar depois se necessário)
+// Professional.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+// Professional.hasMany(Appointment, { foreignKey: 'professional_id', as: 'appointments' });
+
+// =====================================================
+// EXPORTAÇÃO (agora com Professional incluso)
+// =====================================================
 module.exports = {
   sequelize,
   Company,
@@ -501,5 +587,5 @@ module.exports = {
   Sale,
   InvitationCode,
   ClientCompany,
+  Professional, // <-- NOVO MODELO ADICIONADO
 };
-
