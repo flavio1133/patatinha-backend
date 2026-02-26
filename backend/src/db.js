@@ -1,6 +1,7 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
 const {
+  DATABASE_URL,
   DB_HOST = 'localhost',
   DB_PORT = 5432,
   DB_NAME = 'patatinha_db',
@@ -9,12 +10,25 @@ const {
   NODE_ENV,
 } = process.env;
 
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST,
-  port: DB_PORT,
-  dialect: 'postgres',
-  logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
-});
+// Render e outros hosts externos usam DATABASE_URL; local usa variáveis separadas
+const isProduction = NODE_ENV === 'production';
+const dialectOptions = isProduction && DATABASE_URL
+  ? { ssl: { require: true, rejectUnauthorized: false } }
+  : {};
+
+const sequelize = DATABASE_URL
+  ? new Sequelize(DATABASE_URL, {
+      dialect: 'postgres',
+      logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
+      dialectOptions,
+    })
+  : new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+      host: DB_HOST,
+      port: DB_PORT,
+      dialect: 'postgres',
+      logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
+      dialectOptions,
+    });
 
 // =====================================================
 // MODELOS EXISTENTES (mantidos exatamente como estavam)
@@ -508,12 +522,12 @@ const Professional = sequelize.define('Professional', {
   },
   email: {
     type: DataTypes.STRING(255),
-    allowNull: false,
+    allowNull: true,
     unique: true,
   },
   password_hash: {
     type: DataTypes.STRING(255),
-    allowNull: false,
+    allowNull: true,
   },
   phone: {
     type: DataTypes.STRING(50),

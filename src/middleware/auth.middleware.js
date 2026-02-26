@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// Middleware de autenticação JWT reutilizável
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -16,15 +15,14 @@ function authenticateToken(req, res, next) {
       if (err) {
         return res.status(403).json({ error: 'Token inválido' });
       }
-      // Company owner (type: 'company', role: 'owner') tem acesso equivalente a manager
       let role = user.role || 'customer';
       if (user.type === 'company' && user.role === 'owner') {
         role = 'manager';
       }
-      req.user = {
-        ...user,
-        role,
-      };
+      if (user.type === 'company') {
+        req.companyId = user.companyId || user.id;
+      }
+      req.user = { ...user, role };
       next();
     }
   );

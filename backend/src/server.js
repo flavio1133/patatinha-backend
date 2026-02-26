@@ -146,10 +146,14 @@ if (process.env.NODE_ENV !== 'test') {
   (async () => {
     try {
       await sequelize.authenticate();
-      await sequelize.sync();
-      console.log('✅ Conectado ao banco de dados e modelos sincronizados.');
+      await sequelize.sync({ alter: true });
+      const dbName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).pathname.slice(1) : process.env.DB_NAME || 'patatinha_db';
+      console.log('✅ Conectado ao PostgreSQL:', dbName);
+      console.log('✅ Modelos sincronizados com o banco.');
     } catch (err) {
-      console.error('❌ Erro ao conectar no banco de dados:', err.message);
+      console.error('❌ ERRO CRÍTICO NO BANCO:', err.message);
+      console.error('📋 Stack:', err.stack);
+      process.exit(1);
     }
 
     app.listen(PORT, () => {

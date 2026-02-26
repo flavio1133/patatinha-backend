@@ -1,608 +1,268 @@
-const { Sequelize, DataTypes } = require('sequelize');
+/**
+ * Rotas de profissionais – persistência em PostgreSQL (Sequelize).
+ * Cache em memória hidratado do banco para compatibilidade com appointments e companies.
+ */
+const express = require('express');
+const router = express.Router();
+const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+const { authenticateToken } = require('../middleware/auth.middleware');
+const { requireRole } = require('../middleware/role.middleware');
+const { Professional, sequelize } = require('../db');
 
-const {
-  DB_HOST = 'localhost',
-  DB_PORT = 5432,
-  DB_NAME = 'patatinha_db',
-  DB_USER = 'postgres',
-  DB_PASSWORD = 'postgres',
-  NODE_ENV,
-} = process.env;
+const professionals = [];
+const state = { professionalIdCounter: 1 };
 
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-  host: DB_HOST,
-  port: DB_PORT,
-  dialect: 'postgres',
-  logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
-});
+async function hydrateProfessionalsFromDatabase() {
+  try {
+    const rows = await Professional.findAll({ order: [['id', 'ASC']] });
+    professionals.length = 0;
+    rows.forEach((row) => {
+      const plain = row.get({ plain: true });
+      professionals.push({
+        ...plain,
+        workSchedule: plain.workSchedule || plain.work_schedule || { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
+        daysOff: plain.daysOff || plain.days_off || [],
+        isActive: plain.isActive !== false && plain.is_active !== false,
+      });
+    });
+    const last = professionals[professionals.length - 1];
+    state.professionalIdCounter = last ? (last.id || 0) + 1 : 1;
+    if (process.env.NODE_ENV === 'development' && process.env.DB_LOGGING === 'true') {
+      console.log('📦 Profissionais hidratados do banco:', professionals.length);
+    }
+  } catch (err) {
+    console.error('Erro ao carregar profissionais do banco:', err.message);
+  }
+}
 
-// Empresas (dados principais)
-const Company = sequelize.define('Company', {
-  id: {
-    type: DataTypes.STRING,
-    primaryKey: true,
-  },
-  person_type: {
-    type: DataTypes.ENUM('pf', 'pj'),
-    allowNull: false,
-  },
-  cpf: {
-    type: DataTypes.STRING(14),
-    allowNull: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  legal_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  cnpj: {
-    type: DataTypes.STRING(18),
-    allowNull: true,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  password_hash: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  phone: DataTypes.STRING,
-  whatsapp: DataTypes.STRING,
-  address: DataTypes.STRING,
-  address_number: DataTypes.STRING,
-  complement: DataTypes.STRING,
-  neighborhood: DataTypes.STRING,
-  city: DataTypes.STRING,
-  state: DataTypes.STRING,
-  zip_code: DataTypes.STRING,
-  logo_url: DataTypes.STRING,
-  website: DataTypes.STRING,
-  instagram: DataTypes.STRING,
-  owner_is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  trial_start: DataTypes.DATE,
-  trial_end: DataTypes.DATE,
-  subscription_status: {
-    type: DataTypes.STRING,
-    defaultValue: 'trial',
-  },
-  subscription_plan_id: DataTypes.STRING,
-  payment_customer_id: DataTypes.STRING,
-  payment_method: DataTypes.STRING,
-}, {
-  tableName: 'companies',
-  underscored: true,
-});
+hydrateProfessionalsFromDatabase();
 
-// Configurações da empresa (horário, módulos, etc.)
-const CompanySettings = sequelize.define('CompanySettings', {
-  id: {
-    type: DataTypes.STRING,
-    primaryKey: true,
-  },
-  company_id: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  opening_hours: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: {},
-  },
-  services_offered: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    allowNull: false,
-    defaultValue: [],
-  },
-  enabled_modules: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: {
-      pdv: true,
-      finance: true,
-      inventory: true,
-      reports: true,
-    },
-  },
-}, {
-  tableName: 'company_settings',
-  underscored: true,
-});
+function toPlain(p) {
+  const schedule = p.workSchedule || p.work_schedule || { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' };
+  return {
+    id: p.id,
+    name: p.name,
+    email: p.email || null,
+    phone: p.phone || null,
+    specialties: p.specialties || [],
+    averageSpeed: p.averageSpeed ?? p.average_speed ?? 60,
+    workSchedule: schedule,
+    daysOff: p.daysOff || p.days_off || [],
+    isActive: p.isActive !== false && p.is_active !== false,
+    companyId: p.companyId || p.company_id || null,
+    createdAt: p.createdAt || p.created_at,
+    updatedAt: p.updatedAt || p.updated_at,
+  };
+}
 
-// Funcionários da empresa (login próprio da empresa, não o Auth global)
-const CompanyEmployee = sequelize.define('CompanyEmployee', {
-  id: {
-    type: DataTypes.STRING,
-    primaryKey: true,
-  },
-  company_id: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  cpf: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  password_hash: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  role: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-  tableName: 'company_employees',
-  underscored: true,
-});
-
-Company.hasOne(CompanySettings, { foreignKey: 'company_id', as: 'settings' });
-CompanySettings.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
-
-Company.hasMany(CompanyEmployee, { foreignKey: 'company_id', as: 'employees' });
-CompanyEmployee.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
-
-// Clientes
-const Customer = sequelize.define('Customer', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  phone: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  address: DataTypes.STRING,
-  notes: DataTypes.TEXT,
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'user_id',
-  },
-  photo: DataTypes.STRING,
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  deleted_at: DataTypes.DATE,
-}, {
-  tableName: 'customers',
-  underscored: true,
-});
-
-// Pets
-const Pet = sequelize.define('Pet', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'user_id',
-  },
-  customerId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'customer_id',
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  breed: DataTypes.STRING,
-  age: DataTypes.INTEGER,
-  birthDate: {
-    type: DataTypes.STRING,
-    field: 'birth_date',
-  },
-  species: DataTypes.STRING,
-  color: DataTypes.STRING,
-  weight: DataTypes.FLOAT,
-  photo: DataTypes.STRING,
-  importantInfo: {
-    type: DataTypes.TEXT,
-    field: 'important_info',
-  },
-  behaviorAlerts: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    field: 'behavior_alerts',
-  },
-  groomingPreferences: {
-    type: DataTypes.JSONB,
-    field: 'grooming_preferences',
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  deleted_at: DataTypes.DATE,
-}, {
-  tableName: 'pets',
-  underscored: true,
-});
-
-Customer.hasMany(Pet, { foreignKey: 'customer_id', as: 'pets' });
-Pet.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
-
-// Produtos (estoque)
-const Product = sequelize.define('Product', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  brand: DataTypes.STRING,
-  sku: DataTypes.STRING,
-  category: DataTypes.STRING,
-  description: DataTypes.TEXT,
-  price: DataTypes.FLOAT,
-  stock: DataTypes.INTEGER,
-  minStock: {
-    type: DataTypes.INTEGER,
-    field: 'min_stock',
-  },
-  sellByWeight: {
-    type: DataTypes.BOOLEAN,
-    field: 'sell_by_weight',
-  },
-  stockWeight: {
-    type: DataTypes.FLOAT,
-    field: 'stock_weight',
-  },
-  minStockWeight: {
-    type: DataTypes.FLOAT,
-    field: 'min_stock_weight',
-  },
-  pricePerKg: {
-    type: DataTypes.FLOAT,
-    field: 'price_per_kg',
-  },
-  isConsumable: {
-    type: DataTypes.BOOLEAN,
-    field: 'is_consumable',
-  },
-  volume: DataTypes.FLOAT,
-  cost: DataTypes.FLOAT,
-  yieldPerService: {
-    type: DataTypes.FLOAT,
-    field: 'yield_per_service',
-  },
-  unit: DataTypes.STRING,
-}, {
-  tableName: 'products',
-  underscored: true,
-});
-
-// Vendas
-const Sale = sequelize.define('Sale', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  customerId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'customer_id',
-  },
-  appointmentId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'appointment_id',
-  },
-  items: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-  },
-  subtotal: DataTypes.FLOAT,
-  discount: DataTypes.FLOAT,
-  total: DataTypes.FLOAT,
-  paymentMethod: {
-    type: DataTypes.STRING,
-    field: 'payment_method',
-  },
-  cashAmount: {
-    type: DataTypes.FLOAT,
-    field: 'cash_amount',
-  },
-  change: DataTypes.FLOAT,
-  notes: DataTypes.TEXT,
-  date: DataTypes.STRING,
-  time: DataTypes.STRING,
-}, {
-  tableName: 'sales',
-  underscored: true,
-});
-
-// Agendamentos
-const Appointment = sequelize.define('Appointment', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'user_id',
-  },
-  customerId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'customer_id',
-  },
-  companyId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'company_id',
-  },
-  petId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'pet_id',
-  },
-  professionalId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    field: 'professional_id',
-  },
-  service: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  date: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  time: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  duration: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  notes: DataTypes.TEXT,
-  status: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'confirmed',
-  },
-  checkInTime: {
-    type: DataTypes.DATE,
-    field: 'check_in_time',
-  },
-  checkOutTime: {
-    type: DataTypes.DATE,
-    field: 'check_out_time',
-  },
-  estimatedCompletionTime: {
-    type: DataTypes.DATE,
-    field: 'estimated_completion_time',
-  },
-  cancellation_reason: DataTypes.TEXT,
-  cancelled_by: DataTypes.STRING,
-  cancelled_at: DataTypes.DATE,
-  cancellationFee: {
-    type: DataTypes.FLOAT,
-    field: 'cancellation_fee',
-  },
-}, {
-  tableName: 'appointments',
-  underscored: true,
-});
-
-// Códigos de convite
-const InvitationCode = sequelize.define('InvitationCode', {
-  id: {
-    type: DataTypes.STRING,
-    primaryKey: true,
-  },
-  company_id: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  code: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  client_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
-  status: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'available',
-  },
-  expires_at: DataTypes.DATE,
-  used_at: DataTypes.DATE,
-}, {
-  tableName: 'invitation_codes',
-  underscored: true,
-});
-
-// Vínculo cliente-empresa (via convite ou outros meios)
-const ClientCompany = sequelize.define('ClientCompany', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  client_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  company_id: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  linked_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-  },
-  linked_by: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'invitation',
-  },
-  is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-  tableName: 'client_companies',
-  underscored: true,
-});
-
-// =====================================================
-// PROFISSIONAIS (funcionários que atendem)
-// =====================================================
-const Professional = sequelize.define('Professional', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-    unique: true,
-  },
-  password_hash: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  phone: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-  },
-  specialties: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    defaultValue: [],
-  },
-  roles: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    defaultValue: [],
-  },
-  averageSpeed: {
-    type: DataTypes.INTEGER,
-    defaultValue: 60,
-    field: 'average_speed',
-  },
-  workSchedule: {
-    type: DataTypes.JSONB,
-    defaultValue: {
-      start: '08:00',
-      end: '18:00',
-      lunchStart: '12:00',
-      lunchEnd: '13:00'
-    },
-    field: 'work_schedule',
-  },
-  daysOff: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    defaultValue: [],
-    field: 'days_off',
-  },
-  permissions: {
-    type: DataTypes.JSONB,
-    defaultValue: {
-      canViewAgenda: true,
-      canEditAgenda: true,
-      canEditInventory: false,
-      canViewFinance: false,
-    },
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    field: 'user_id',
-  },
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-    field: 'is_active',
-  },
-  companyId: {
-    type: DataTypes.STRING,
-    allowNull: true,
-    field: 'company_id',
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    field: 'created_at',
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-    field: 'updated_at',
-  },
-  deleted_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    field: 'deleted_at',
-  },
-}, {
-  tableName: 'professionals',
-  underscored: true,
-  paranoid: true, // soft delete com deleted_at
-});
-
-// Associações (opcional)
-// Professional.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
-// Professional.hasMany(Appointment, { foreignKey: 'professional_id', as: 'appointments' });
-
-module.exports = {
-  sequelize,
-  Company,
-  CompanySettings,
-  CompanyEmployee,
-  Customer,
-  Pet,
-  Appointment,
-  Product,
-  Sale,
-  InvitationCode,
-  ClientCompany,
-  Professional,
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  next();
 };
+
+// Listar todos os profissionais (do banco via cache)
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    await hydrateProfessionalsFromDatabase();
+    const { includeInactive } = req.query;
+    let list = professionals;
+    if (!includeInactive) {
+      list = list.filter((p) => p.isActive !== false && !p.deleted_at);
+    }
+    res.json({ professionals: list.map(toPlain) });
+  } catch (err) {
+    console.error('❌ Erro no banco (professionals list):', err.message);
+    res.status(500).json({ error: 'Erro ao listar profissionais' });
+  }
+});
+
+// Obter profissional específico
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    let p = professionals.find((x) => x.id === id);
+    if (!p) {
+      const row = await Professional.findByPk(id);
+      if (!row) return res.status(404).json({ error: 'Profissional não encontrado' });
+      p = row.get({ plain: true });
+    }
+    res.json(toPlain(p));
+  } catch (err) {
+    console.error('❌ Erro no banco (professional get):', err.message);
+    res.status(500).json({ error: 'Erro ao buscar profissional' });
+  }
+});
+
+// Criar novo profissional (persiste no banco)
+router.post('/', [
+  authenticateToken,
+  requireRole('manager', 'master', 'super_admin', 'owner'),
+  body('name').trim().notEmpty().withMessage('Nome é obrigatório'),
+  body('specialties').optional().isArray(),
+  validate,
+], async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      password,
+      phone,
+      specialties = [],
+      averageSpeed = 60,
+      workSchedule = { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' },
+      daysOff = [],
+      isActive = true,
+      companyId,
+    } = req.body;
+
+    const payload = {
+      name: name.trim(),
+      email: (email && email.trim()) || null,
+      phone: (phone && phone.trim()) || null,
+      specialties: Array.isArray(specialties) ? specialties : [],
+      averageSpeed: parseInt(averageSpeed, 10) || 60,
+      workSchedule: workSchedule || {},
+      daysOff: Array.isArray(daysOff) ? daysOff : [],
+      isActive: !!isActive,
+      companyId: companyId || null,
+    };
+    if (password && password.trim()) {
+      payload.password_hash = await bcrypt.hash(password.trim(), 10);
+    }
+
+    const created = await Professional.create(payload);
+    const plain = created.get({ plain: true });
+    professionals.push(plain);
+    state.professionalIdCounter = Math.max(state.professionalIdCounter, (plain.id || 0) + 1);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📦 Salvando no banco (professional):', plain.id);
+    }
+    res.status(201).json({
+      message: 'Profissional cadastrado com sucesso',
+      professional: toPlain(plain),
+    });
+  } catch (err) {
+    console.error('❌ Erro no banco (professional create):', err.message);
+    res.status(500).json({ error: err.message || 'Erro ao cadastrar profissional' });
+  }
+});
+
+// Atualizar profissional
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const row = await Professional.findByPk(id);
+    if (!row) return res.status(404).json({ error: 'Profissional não encontrado' });
+
+    const allowed = ['name', 'email', 'phone', 'specialties', 'averageSpeed', 'workSchedule', 'daysOff', 'isActive', 'companyId'];
+    const updates = {};
+    allowed.forEach((key) => {
+      if (req.body[key] !== undefined) {
+        if (key === 'workSchedule') updates.workSchedule = req.body.workSchedule;
+        else if (key === 'daysOff') updates.daysOff = req.body.daysOff;
+        else if (key === 'averageSpeed') updates.averageSpeed = parseInt(req.body.averageSpeed, 10) || 60;
+        else updates[key] = req.body[key];
+      }
+    });
+    if (req.body.password && req.body.password.trim()) {
+      updates.password_hash = await bcrypt.hash(req.body.password.trim(), 10);
+    }
+
+    await row.update(updates);
+    const idx = professionals.findIndex((p) => p.id === id);
+    const plain = row.get({ plain: true });
+    if (idx >= 0) professionals[idx] = plain;
+    else professionals.push(plain);
+
+    res.json({ message: 'Profissional atualizado com sucesso', professional: toPlain(plain) });
+  } catch (err) {
+    console.error('❌ Erro no banco (professional update):', err.message);
+    res.status(500).json({ error: err.message || 'Erro ao atualizar profissional' });
+  }
+});
+
+// Deletar profissional (soft delete: isActive = false)
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const row = await Professional.findByPk(id);
+    if (!row) return res.status(404).json({ error: 'Profissional não encontrado' });
+
+    await row.update({ isActive: false });
+    const idx = professionals.findIndex((p) => p.id === id);
+    if (idx >= 0) professionals[idx].isActive = false;
+
+    res.json({ message: 'Profissional removido com sucesso' });
+  } catch (err) {
+    console.error('❌ Erro no banco (professional delete):', err.message);
+    res.status(500).json({ error: 'Erro ao remover profissional' });
+  }
+});
+
+// Disponibilidade do profissional em uma data
+function timeToMinutes(time) {
+  const [h, m] = (time || '00:00').split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+function minutesToTime(min) {
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
+function isSlotOccupied(slotTime, appointments) {
+  return appointments.some((apt) => {
+    const aptStart = timeToMinutes(apt.time);
+    const aptEnd = aptStart + (apt.duration || 60);
+    const slotMin = timeToMinutes(slotTime);
+    return slotMin >= aptStart - 5 && slotMin < aptEnd + 5;
+  });
+}
+
+router.get('/:id/availability', authenticateToken, (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'Data é obrigatória' });
+
+  const id = parseInt(req.params.id, 10);
+  const professional = professionals.find((p) => p.id === id);
+  if (!professional) return res.status(404).json({ error: 'Profissional não encontrado' });
+
+  let getAppointmentsByProfessionalAndDate;
+  try {
+    getAppointmentsByProfessionalAndDate = require('./appointments.routes').getAppointmentsByProfessionalAndDate;
+  } catch {
+    getAppointmentsByProfessionalAndDate = () => [];
+  }
+  const existingAppointments = getAppointmentsByProfessionalAndDate(id, date);
+  const schedule = professional.workSchedule || professional.work_schedule || { start: '08:00', end: '18:00', lunchStart: '12:00', lunchEnd: '13:00' };
+  const startMinutes = timeToMinutes(schedule.start);
+  const endMinutes = timeToMinutes(schedule.end);
+  const lunchStart = timeToMinutes(schedule.lunchStart || '12:00');
+  const lunchEnd = timeToMinutes(schedule.lunchEnd || '13:00');
+
+  const availableSlots = [];
+  for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+    if (minutes >= lunchStart && minutes < lunchEnd) continue;
+    const slotTime = minutesToTime(minutes);
+    availableSlots.push({
+      time: slotTime,
+      available: !isSlotOccupied(slotTime, existingAppointments),
+    });
+  }
+
+  res.json({
+    professional: professional.name,
+    date,
+    availableSlots,
+    appointments: existingAppointments.length,
+  });
+});
+
+function getProfessionalById(id) {
+  return professionals.find((p) => p.id === id);
+}
+
+module.exports = router;
+module.exports.getProfessionalById = getProfessionalById;
+module.exports.professionals = professionals;
+module.exports.professionalsState = state;
