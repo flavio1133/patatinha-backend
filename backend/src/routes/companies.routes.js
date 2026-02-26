@@ -229,20 +229,33 @@ const upload = multer({
 });
 
 // Dados públicos da empresa (para app cliente vinculado)
-router.get('/:id/public', (req, res) => {
-  const company = companies.find((c) => c.id === req.params.id);
-  if (!company) return res.status(404).json({ error: 'Empresa não encontrada' });
-  const settings = companySettings.find((s) => s.company_id === company.id);
-  res.json({
-    id: company.id,
-    name: company.name,
-    logo_url: company.logo_url,
-    phone: company.phone,
-    whatsapp: company.whatsapp,
-    address: `${company.address}, ${company.address_number}`,
-    services_offered: settings?.services_offered || [],
-    opening_hours: settings?.opening_hours || {},
-  });
+// Lê do banco para retornar sempre serviços, dias e horários atualizados (sincronização petshop → cliente)
+router.get('/:id/public', async (req, res) => {
+  try {
+    const company = await Company.findByPk(req.params.id, {
+      attributes: ['id', 'name', 'logo_url', 'phone', 'whatsapp', 'address', 'address_number'],
+    });
+    if (!company) return res.status(404).json({ error: 'Empresa não encontrada' });
+    const settings = await CompanySettings.findOne({
+      where: { company_id: req.params.id },
+      attributes: ['services_offered', 'opening_hours'],
+    });
+    const plain = company.get({ plain: true });
+    const addr = [plain.address, plain.address_number].filter(Boolean).join(', ');
+    res.json({
+      id: plain.id,
+      name: plain.name,
+      logo_url: plain.logo_url,
+      phone: plain.phone,
+      whatsapp: plain.whatsapp,
+      address: addr || null,
+      services_offered: settings?.services_offered ?? [],
+      opening_hours: settings?.opening_hours ?? {},
+    });
+  } catch (err) {
+    console.error('Erro ao buscar empresa pública:', err.message);
+    res.status(500).json({ error: 'Erro ao carregar dados da empresa' });
+  }
 });
 
 // Lista de profissionais da empresa (para cliente escolher no agendamento)
@@ -678,13 +691,29 @@ router.get('/:id', authCompany, (req, res) => {
 });
 
 // Atualizar configurações da empresa (horários e serviços disponíveis para clientes)
-router.put('/:id/settings', authCompany, requireCompanyOwner, (req, res) => {
+// Persiste no banco para que o cliente (GET /public) receba sempre dados atualizados
+router.put('/:id/settings', authCompany, requireCompanyOwner, async (req, res) => {
   if (req.params.id !== req.companyId) return res.status(403).json({ error: 'Acesso negado' });
   const idx = companySettings.findIndex((s) => s.company_id === req.companyId);
   if (idx === -1) return res.status(404).json({ error: 'Configurações não encontradas' });
-  if (req.body.opening_hours != null) companySettings[idx].opening_hours = req.body.opening_hours;
-  if (req.body.services_offered != null) companySettings[idx].services_offered = req.body.services_offered;
+  const updates = {};
+  if (req.body.opening_hours != null) {
+    companySettings[idx].opening_hours = req.body.opening_hours;
+    updates.opening_hours = req.body.opening_hours;
+  }
+  if (req.body.services_offered != null) {
+    companySettings[idx].services_offered = req.body.services_offered;
+    updates.services_offered = req.body.services_offered;
+  }
   companySettings[idx].updated_at = new Date();
+  try {
+    const settingsId = companySettings[idx].id;
+    if (settingsId && Object.keys(updates).length > 0) {
+      await CompanySettings.update(updates, { where: { id: settingsId } });
+    }
+  } catch (err) {
+    console.error('Erro ao persistir configurações no banco:', err.message);
+  }
   res.json({ message: 'Configurações atualizadas', settings: companySettings[idx] });
 });
 

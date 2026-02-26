@@ -10,7 +10,7 @@ const { generateUniqueInvitationCode } = require('../utils/codeGenerator');
 const JWT_SECRET = process.env.JWT_SECRET || 'patatinha-secret-key-change-in-production';
 
 const { invitationCodes, clientCompanies, nextLinkId } = require('../data/invitation-codes.data');
-const { InvitationCode, ClientCompany, Customer } = require('../db');
+const { InvitationCode, ClientCompany, Customer, Company } = require('../db');
 const customersModule = require('./customers.routes');
 const { customers, customersState } = customersModule;
 const { users } = require('./auth.routes');
@@ -110,24 +110,41 @@ router.post('/validate-invitation-code', [
 });
 
 // GET /api/linked-companies - Listar Pet Shops vinculados ao cliente (requer auth cliente)
-router.get('/linked-companies', authClient, (req, res) => {
+// Lê do banco para garantir dados atualizados após validação do token (sincronização cliente ↔ petshop)
+router.get('/linked-companies', authClient, async (req, res) => {
   const clientId = req.userId;
-  const companies = getCompanies();
-  const links = clientCompanies.filter(
-    (l) => String(l.client_id) === String(clientId) && l.is_active
-  );
-  const list = links.map((l) => {
-    const company = companies.find((c) => c.id === l.company_id);
-    if (!company) return null;
-    return {
-      id: company.id,
-      name: company.name,
-      logo_url: company.logo_url,
-      phone: company.phone,
-      whatsapp: company.whatsapp,
-    };
-  }).filter(Boolean);
-  res.json({ companies: list });
+  try {
+    const links = await ClientCompany.findAll({
+      where: { client_id: clientId, is_active: true },
+      order: [['linked_at', 'DESC']],
+    });
+    if (links.length === 0) {
+      return res.json({ companies: [] });
+    }
+    const companyIds = [...new Set(links.map((l) => l.company_id))];
+    const companies = await Company.findAll({
+      where: { id: companyIds },
+      attributes: ['id', 'name', 'logo_url', 'phone', 'whatsapp'],
+    });
+    const companyMap = new Map(companies.map((c) => [c.id, c.get({ plain: true })]));
+    const list = links
+      .map((l) => {
+        const company = companyMap.get(l.company_id);
+        if (!company) return null;
+        return {
+          id: company.id,
+          name: company.name,
+          logo_url: company.logo_url,
+          phone: company.phone,
+          whatsapp: company.whatsapp,
+        };
+      })
+      .filter(Boolean);
+    res.json({ companies: list });
+  } catch (err) {
+    console.error('Erro ao listar empresas vinculadas:', err.message);
+    res.status(500).json({ error: 'Erro ao carregar empresas vinculadas' });
+  }
 });
 
 // POST /api/link-client-to-company - Vincular cliente à empresa (requer auth cliente)
@@ -194,14 +211,14 @@ router.post('/link-client-to-company', authClient, [
 
   // Criar automaticamente um registro de cliente (customers) para este usuário,
   // caso ainda não exista, para que apareça na aba Clientes da gestão.
+  // Dados do cliente (nome, contato) vêm do auth (users) e são persistidos e vinculados ao petshop.
   try {
     const existingCustomer = customers.find((c) => c.userId === clientId);
     if (!existingCustomer) {
       const user = users.find((u) => u.id === clientId);
       if (user) {
         const now = new Date();
-        const newCustomer = {
-          id: customersState.customerIdCounter++,
+        const created = await Customer.create({
           name: user.name || 'Cliente',
           phone: user.phone || '',
           email: user.email || null,
@@ -211,23 +228,15 @@ router.post('/link-client-to-company', authClient, [
           photo: null,
           is_active: true,
           deleted_at: null,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        customers.push(newCustomer);
-
-        await Customer.create({
-          name: newCustomer.name,
-          phone: newCustomer.phone,
-          email: newCustomer.email,
-          address: newCustomer.address,
-          notes: newCustomer.notes,
-          userId: newCustomer.userId,
-          photo: newCustomer.photo,
-          is_active: newCustomer.is_active,
-          deleted_at: newCustomer.deleted_at,
         });
+        const plain = created.get({ plain: true });
+        const newCustomer = {
+          ...plain,
+          createdAt: plain.createdAt || plain.created_at || now,
+          updatedAt: plain.updatedAt || plain.updated_at || now,
+        };
+        customers.push(newCustomer);
+        customersState.customerIdCounter = Math.max(customersState.customerIdCounter, (plain.id || 0) + 1);
       }
     }
   } catch (err) {

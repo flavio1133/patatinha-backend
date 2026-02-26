@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
+import { useCompany } from '../contexts/CompanyContext';
 import { invitationCodesAPI } from '../services/api';
 import './ClienteEnterCodePage.css';
 
@@ -10,6 +12,8 @@ export default function ClienteEnterCodePage() {
   const [error, setError] = useState('');
   const [validated, setValidated] = useState(null);
   const { user, isAuthenticated } = useAuth();
+  const { setCompanyId } = useCompany();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -61,9 +65,13 @@ export default function ClienteEnterCodePage() {
     setError('');
     try {
       await invitationCodesAPI.linkToCompany(validated.invitation.id);
-      localStorage.setItem('client_company_id', validated.company.id);
+      const companyId = validated.company.id;
+      localStorage.setItem('client_company_id', companyId);
+      // Invalidar caches para que cliente e petshop vejam dados atualizados após o vínculo
+      queryClient.invalidateQueries({ queryKey: ['linked-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['company-public', companyId] });
+      setCompanyId(companyId);
       navigate('/cliente/home', { state: { message: `Bem-vindo à ${validated.company.name}!` } });
-      window.location.reload();
     } catch (err) {
       setError(err.response?.data?.error || 'Erro ao vincular');
     } finally {
