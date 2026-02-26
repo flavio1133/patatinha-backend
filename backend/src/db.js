@@ -10,25 +10,37 @@ const {
   NODE_ENV,
 } = process.env;
 
-// Render e outros hosts externos usam DATABASE_URL; local usa variáveis separadas
-const isProduction = NODE_ENV === 'production';
-const dialectOptions = isProduction && DATABASE_URL
+// Render e outros hosts externos: usar SSL sempre que DATABASE_URL existir
+const useDatabaseUrl = Boolean(DATABASE_URL && DATABASE_URL.trim());
+const dialectOptions = useDatabaseUrl
   ? { ssl: { require: true, rejectUnauthorized: false } }
   : {};
 
-const sequelize = DATABASE_URL
-  ? new Sequelize(DATABASE_URL, {
+const sequelize = useDatabaseUrl
+  ? new Sequelize(DATABASE_URL.trim(), {
       dialect: 'postgres',
       logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
       dialectOptions,
     })
   : new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
       host: DB_HOST,
-      port: DB_PORT,
+      port: Number(DB_PORT) || 5432,
       dialect: 'postgres',
       logging: NODE_ENV === 'development' && process.env.DB_LOGGING === 'true' ? console.log : false,
       dialectOptions,
     });
+
+// Log seguro da origem da conexão (sem expor senha)
+if (useDatabaseUrl) {
+  try {
+    const u = new URL(DATABASE_URL);
+    console.log('🔗 Conexão DB: DATABASE_URL → host=', u.hostname, 'database=', (u.pathname || '').replace(/^\//, '') || '(default)');
+  } catch {
+    console.log('🔗 Conexão DB: DATABASE_URL (URL não parseável para log)');
+  }
+} else {
+  console.log('🔗 Conexão DB: fallback → host=', DB_HOST, 'database=', DB_NAME);
+}
 
 // =====================================================
 // MODELOS EXISTENTES (mantidos exatamente como estavam)

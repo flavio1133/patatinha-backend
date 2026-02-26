@@ -137,9 +137,7 @@ router.post('/', [
     professionals.push(plain);
     state.professionalIdCounter = Math.max(state.professionalIdCounter, (plain.id || 0) + 1);
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📦 Salvando no banco (professional):', plain.id);
-    }
+    console.log('📦 Salvando no banco (professional): id=', plain.id, 'nome=', plain.name);
     res.status(201).json({
       message: 'Profissional cadastrado com sucesso',
       professional: toPlain(plain),

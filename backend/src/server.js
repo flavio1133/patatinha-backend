@@ -1,11 +1,10 @@
+// Carregar variáveis de ambiente ANTES de qualquer require que use process.env (ex.: db.js)
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { sequelize } = require('./db');
-const dotenv = require('dotenv');
-
-// Carregar variáveis de ambiente
-dotenv.config();
 
 // Importar Firebase e App Check (com a nova lógica condicional)
 const { verifyAppCheck } = require('./services/firebase');
@@ -146,9 +145,10 @@ if (process.env.NODE_ENV !== 'test') {
   (async () => {
     try {
       await sequelize.authenticate();
+      const dialect = sequelize.getDialect();
+      const dbName = sequelize.config.database || process.env.DB_NAME || 'patatinha_db';
+      console.log('✅ Conectado ao PostgreSQL. dialect=', dialect, 'database=', dbName);
       await sequelize.sync({ alter: true });
-      const dbName = process.env.DATABASE_URL ? new URL(process.env.DATABASE_URL).pathname.slice(1) : process.env.DB_NAME || 'patatinha_db';
-      console.log('✅ Conectado ao PostgreSQL:', dbName);
       console.log('✅ Modelos sincronizados com o banco.');
     } catch (err) {
       console.error('❌ ERRO CRÍTICO NO BANCO:', err.message);

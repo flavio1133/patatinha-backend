@@ -3,9 +3,12 @@
 ## Alterações realizadas (correção definitiva)
 
 ### 1. Conexão com o banco (`backend/src/db.js`)
-- **DATABASE_URL**: quando definida (ex.: Render), o Sequelize usa a URL completa em vez de DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD.
-- **SSL**: em produção com `DATABASE_URL`, é usado `dialectOptions.ssl: { require: true, rejectUnauthorized: false }` para conexão segura no Render.
-- **Log**: o servidor exibe no console o nome do banco após conectar (ver `server.js`).
+- **DATABASE_URL**: quando definida (ex.: Render), o Sequelize usa a URL completa. Sem DATABASE_URL, usa DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD.
+- **SSL**: sempre que `DATABASE_URL` existir, usa `dialectOptions.ssl: { require: true, rejectUnauthorized: false }` (obrigatório no Render).
+- **Log seguro**: ao carregar o módulo, exibe no console a origem da conexão (host e database, sem senha).
+
+### 1.1 Ordem de carregamento (`backend/src/server.js`)
+- **`dotenv.config()`** é chamado na **primeira linha** do server.js, antes de `require('./db')`, para que variáveis do `.env` (em desenvolvimento) estejam disponíveis quando o db.js for carregado. No Render, as variáveis vêm do ambiente da plataforma.
 
 ### 2. Sincronização dos modelos (`backend/src/server.js`)
 - `sequelize.sync({ alter: true })` já estava em uso (desenvolvimento e produção).
@@ -46,6 +49,38 @@
 1. **Criar um profissional** (POST /api/professionals com token).
 2. **Conferir no banco**: `SELECT * FROM professionals;`
 3. **Reiniciar o servidor** e listar novamente (GET /api/professionals) – o dado deve continuar.
+
+---
+
+## Diagnóstico: banco não sendo usado
+
+### O que foi verificado e corrigido
+
+| Problema | Correção |
+|----------|----------|
+| **dotenv depois do db** | `dotenv.config()` passou a ser a **primeira linha** do server.js, antes de `require('./db')`, para que `DATABASE_URL` exista ao carregar db.js (em dev com .env). |
+| **SSL só em produção** | Quando existe `DATABASE_URL`, o SSL passou a ser **sempre** aplicado (não só com NODE_ENV=production), para o Render conectar ao Postgres. |
+| **Sem log da conexão** | db.js agora faz log seguro ao carregar: `Conexão DB: DATABASE_URL → host=... database=...` (sem senha). |
+| **Sem log de sucesso no create** | POST de profissional passa a logar sempre: `Salvando no banco (professional): id= X nome= Y`. |
+
+### Como testar após o deploy no Render
+
+1. **Logs ao subir o servidor**  
+   - Deve aparecer: `Conexão DB: DATABASE_URL → host=... database=...`  
+   - Em seguida: `Conectado ao PostgreSQL. dialect= postgres database= <nome_do_banco>`  
+   - Se aparecer `fallback → host= localhost`, a `DATABASE_URL` não está sendo usada (verificar variável no Render).
+
+2. **Criar um profissional**  
+   - `curl -X POST .../api/professionals` (com Authorization).  
+   - Nos logs do Render deve aparecer: `Salvando no banco (professional): id= 1 nome= ...`
+
+3. **Conferir no PostgreSQL**  
+   - No Render: Dashboard do Postgres → Connect → usar cliente ou `psql`.  
+   - `SELECT * FROM professionals;` deve listar o registro.
+
+4. **Permissões**  
+   - O usuário do banco (ex.: `flavio_jose`) precisa de permissão de escrita nas tabelas.  
+   - Se as tabelas não existirem, `sync({ alter: true })` cria/altera; em caso de erro de permissão, o servidor faz `process.exit(1)` e a mensagem aparece nos logs.
 
 ---
 
