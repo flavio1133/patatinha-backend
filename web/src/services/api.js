@@ -209,6 +209,8 @@ export const appointmentsAPI = {
     api.put(`/appointments/${id}`, data),
   cancel: (id, data) =>
     api.delete(`/appointments/${id}`, { data: data || {} }),
+  cancelAllByCustomer: (customerId, data) =>
+    api.post('/appointments/cancel-by-customer', { customerId, ...data }),
   getAvailability: (date, service) =>
     api.get('/appointments/availability', { params: { date, service } }),
   checkIn: (id) =>

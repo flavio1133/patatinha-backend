@@ -10,6 +10,9 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState('tabela');
   const [modalOpen, setModalOpen] = useState(false);
+  const [excluirClienteOpen, setExcluirClienteOpen] = useState(false);
+  const [excluirClienteTarget, setExcluirClienteTarget] = useState(null);
+  const [excluirClienteReason, setExcluirClienteReason] = useState('');
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -31,6 +34,19 @@ export default function CustomersPage() {
     queryKey: ['customers', search],
     queryFn: () => customersAPI.getAll(search).then((res) => res.data),
     retry: 1,
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: ({ id, reason }) => customersAPI.deactivate(id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setExcluirClienteOpen(false);
+      setExcluirClienteTarget(null);
+      setExcluirClienteReason('');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Não foi possível excluir o cliente.');
+    },
   });
 
   const createMutation = useMutation({
@@ -89,12 +105,18 @@ export default function CustomersPage() {
     );
   }, [customers, search]);
 
-  const stats = useMemo(() => ({
-    total: customers.length,
-    ativos: customers.filter((c) => (c.lastVisit ? true : (c.petsCount ?? 0) > 0)).length,
-    inativos: customers.filter((c) => !c.lastVisit && (c.petsCount ?? 0) === 0).length,
-    ticketMedio: customers.length ? 85 : 0,
-  }), [customers]);
+  const stats = useMemo(() => {
+    const withSpent = customers.filter((c) => c.totalSpent != null && c.totalSpent > 0);
+    const ticketMedio = withSpent.length
+      ? withSpent.reduce((acc, c) => acc + c.totalSpent, 0) / withSpent.length
+      : 0;
+    return {
+      total: customers.length,
+      ativos: customers.filter((c) => (c.lastVisit ? true : (c.petsCount ?? 0) > 0)).length,
+      inativos: customers.filter((c) => !c.lastVisit && (c.petsCount ?? 0) === 0).length,
+      ticketMedio: Math.round(ticketMedio * 100) / 100,
+    };
+  }, [customers]);
 
   const handleSubmitNewCustomer = (e) => {
     e.preventDefault();
@@ -118,7 +140,7 @@ export default function CustomersPage() {
         <div className="stat-mini"><span>{stats.total}</span> Total</div>
         <div className="stat-mini"><span>{stats.ativos}</span> Ativos</div>
         <div className="stat-mini"><span>{stats.inativos}</span> Inativos</div>
-        <div className="stat-mini"><span>R$ {stats.ticketMedio}</span> Ticket médio</div>
+        <div className="stat-mini"><span>R$ {Number(stats.ticketMedio).toFixed(2)}</span> Ticket médio</div>
       </div>
       <div className="page-header">
         <div className="search-box">
@@ -170,13 +192,29 @@ export default function CustomersPage() {
                   <td>{c.lastVisit || '-'}</td>
                   <td>{c.totalSpent ? `R$ ${c.totalSpent}` : '-'}</td>
                   <td>
+                    <Link to={`/gestao/customers/${c.id}`} className="ui-btn ui-btn-ghost" style={{ marginRight: 8 }}>
+                      Ver tudo
+                    </Link>
                     <button
                       type="button"
                       className="ui-btn ui-btn-secondary btn-agendar-rapido"
                       onClick={() => navigate('/gestao/appointments', { state: { customerId: c.id, customerName: c.name } })}
                     >
-                      Agendar serviço
+                      Agendar
                     </button>
+                    {c.is_active !== false && (
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn-ghost btn-excluir-cliente"
+                        onClick={() => {
+                          setExcluirClienteTarget(c);
+                          setExcluirClienteReason('');
+                          setExcluirClienteOpen(true);
+                        }}
+                      >
+                        Excluir cliente
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -328,6 +366,51 @@ export default function CustomersPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {excluirClienteOpen && excluirClienteTarget && (
+        <div className="modal-overlay" onClick={() => !deactivateMutation.isPending && setExcluirClienteOpen(false)}>
+          <div className="modal-content modal-deactivate" onClick={(e) => e.stopPropagation()}>
+            <h3>Excluir cliente</h3>
+            <p className="modal-deactivate-desc">
+              O cliente <strong>{excluirClienteTarget.name}</strong> será desativado e não aparecerá nas listas. O histórico de serviços e agendamentos será preservado. Apenas Gestor ou Super Admin pode realizar esta ação.
+            </p>
+            <div className="form-group">
+              <label>Motivo da exclusão *</label>
+              <textarea
+                value={excluirClienteReason}
+                onChange={(e) => setExcluirClienteReason(e.target.value)}
+                placeholder="Ex.: Erro de cadastro, solicitação do cliente..."
+                rows={3}
+                required
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => setExcluirClienteOpen(false)}
+                disabled={deactivateMutation.isPending}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={() => {
+                  if (!excluirClienteReason.trim()) {
+                    alert('Informe o motivo da exclusão.');
+                    return;
+                  }
+                  deactivateMutation.mutate({ id: excluirClienteTarget.id, reason: excluirClienteReason.trim() });
+                }}
+                disabled={deactivateMutation.isPending || !excluirClienteReason.trim()}
+              >
+                {deactivateMutation.isPending ? 'Excluindo...' : 'Excluir cliente'}
+              </button>
+            </div>
           </div>
         </div>
       )}

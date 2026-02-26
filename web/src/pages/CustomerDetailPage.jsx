@@ -27,6 +27,11 @@ export default function CustomerDetailPage() {
   const [deactivateReason, setDeactivateReason] = useState('');
   const [addPetOpen, setAddPetOpen] = useState(false);
   const [addPetForm, setAddPetForm] = useState({ name: '', species: 'dog', breed: '', age: '', birthDate: '' });
+  const [cancelAptOpen, setCancelAptOpen] = useState(false);
+  const [cancelAptTarget, setCancelAptTarget] = useState(null);
+  const [cancelAptReason, setCancelAptReason] = useState('');
+  const [cancelAllOpen, setCancelAllOpen] = useState(false);
+  const [cancelAllReason, setCancelAllReason] = useState('');
 
   const { data: customerData, isLoading: loadingCustomer } = useQuery({
     queryKey: ['customer', id],
@@ -89,6 +94,35 @@ export default function CustomerDetailPage() {
     },
   });
 
+  const cancelAptMutation = useMutation({
+    mutationFn: ({ aptId, reason }) => appointmentsAPI.cancel(aptId, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments-customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setCancelAptOpen(false);
+      setCancelAptTarget(null);
+      setCancelAptReason('');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Não foi possível cancelar o agendamento.');
+    },
+  });
+
+  const cancelAllAppointmentsMutation = useMutation({
+    mutationFn: (reason) => appointmentsAPI.cancelAllByCustomer(id, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments-customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setCancelAllOpen(false);
+      setCancelAllReason('');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.error || err.message || 'Não foi possível cancelar os agendamentos.');
+    },
+  });
+
   const openEditModal = () => {
     setEditForm({
       name: customer.name || '',
@@ -141,6 +175,10 @@ export default function CustomerDetailPage() {
           <h1>{customer.name || 'Sem nome'}</h1>
           {customer.phone && <p>Telefone: {customer.phone}</p>}
           {customer.email && <p>Email: {customer.email}</p>}
+          <div className="customer-resumo">
+            <span><strong>Último atendimento:</strong> {customer.lastVisit || '-'}</span>
+            <span><strong>Total gasto:</strong> {customer.totalSpent != null ? `R$ ${Number(customer.totalSpent).toFixed(2)}` : '-'}</span>
+          </div>
           <div className="header-actions">
             <button type="button" className="ui-btn ui-btn-secondary btn-editar" onClick={openEditModal}>
               Editar
@@ -158,7 +196,7 @@ export default function CustomerDetailPage() {
                 className="ui-btn ui-btn-ghost btn-desativar"
                 onClick={() => setDeactivateOpen(true)}
               >
-                Desativar cliente
+                Excluir cliente
               </button>
             )}
             <a
@@ -308,7 +346,18 @@ export default function CustomerDetailPage() {
         )}
         {activeTab === 'agendamentos' && (
           <section>
-            <h3>Agendamentos</h3>
+            <div className="agendamentos-tab-header">
+              <h3>Agendamentos / Tickets</h3>
+              {appointments.filter((a) => a.status !== 'cancelled').length > 0 && (
+                <button
+                  type="button"
+                  className="ui-btn ui-btn-ghost btn-excluir-todos"
+                  onClick={() => { setCancelAllReason(''); setCancelAllOpen(true); }}
+                >
+                  Excluir todos os atendimentos
+                </button>
+              )}
+            </div>
             {appointments.length === 0 ? (
               <p>Nenhum agendamento.</p>
             ) : (
@@ -320,6 +369,15 @@ export default function CustomerDetailPage() {
                     <span className="apt-pet">{a.petName || 'Pet'}</span>
                     <span className="apt-service">{SERVICE_LABEL[a.service] || a.service}</span>
                     <span className="apt-status">{STATUS_LABEL[a.status] || a.status}</span>
+                    {a.status !== 'cancelled' && (
+                      <button
+                        type="button"
+                        className="ui-btn ui-btn-ghost btn-cancel-apt"
+                        onClick={() => { setCancelAptTarget(a); setCancelAptReason(''); setCancelAptOpen(true); }}
+                      >
+                        Excluir ticket
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -412,18 +470,18 @@ export default function CustomerDetailPage() {
       {deactivateOpen && (
         <div className="modal-overlay" onClick={() => !deactivateMutation.isPending && setDeactivateOpen(false)}>
           <div className="modal-content modal-deactivate" onClick={(e) => e.stopPropagation()}>
-            <h3>Desativar cliente</h3>
+            <h3>Excluir cliente</h3>
             <p className="modal-deactivate-desc">
-              O cliente será desativado e não aparecerá nas listas ativas. O histórico de serviços e agendamentos será preservado. Apenas Gestor ou Super Administrador pode realizar esta ação.
+              O cliente será desativado e não aparecerá nas listas. Todos os dados do cadastro ficarão ocultos (histórico preservado no sistema). Apenas Gestor ou Super Admin pode realizar esta ação.
             </p>
             <div className="form-group">
-              <label htmlFor="customer-deactivate-reason">Motivo da desativação *</label>
+              <label htmlFor="customer-deactivate-reason">Motivo da exclusão *</label>
               <textarea
                 id="customer-deactivate-reason"
                 name="customer-deactivate-reason"
                 value={deactivateReason}
                 onChange={(e) => setDeactivateReason(e.target.value)}
-                placeholder="Ex.: Erro de cadastro, solicitação do cliente, descarte..."
+                placeholder="Ex.: Erro de cadastro, solicitação do cliente..."
                 rows={3}
                 required
               />
@@ -442,14 +500,88 @@ export default function CustomerDetailPage() {
                 className="ui-btn ui-btn-danger"
                 onClick={() => {
                   if (!deactivateReason.trim()) {
-                    alert('Informe o motivo da desativação.');
+                    alert('Informe o motivo da exclusão.');
                     return;
                   }
                   deactivateMutation.mutate();
                 }}
                 disabled={deactivateMutation.isPending || !deactivateReason.trim()}
               >
-                {deactivateMutation.isPending ? 'Desativando...' : 'Desativar'}
+                {deactivateMutation.isPending ? 'Excluindo...' : 'Excluir cliente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelAptOpen && cancelAptTarget && (
+        <div className="modal-overlay" onClick={() => !cancelAptMutation.isPending && setCancelAptOpen(false)}>
+          <div className="modal-content modal-deactivate" onClick={(e) => e.stopPropagation()}>
+            <h3>Excluir ticket</h3>
+            <p className="modal-deactivate-desc">
+              Cancelar agendamento de {cancelAptTarget.date} às {cancelAptTarget.time} – {SERVICE_LABEL[cancelAptTarget.service] || cancelAptTarget.service}?
+            </p>
+            <div className="form-group">
+              <label>Justificativa *</label>
+              <textarea
+                value={cancelAptReason}
+                onChange={(e) => setCancelAptReason(e.target.value)}
+                placeholder="Motivo do cancelamento"
+                rows={2}
+                required
+              />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setCancelAptOpen(false)} disabled={cancelAptMutation.isPending}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={() => {
+                  if (!cancelAptReason.trim()) { alert('Informe a justificativa.'); return; }
+                  cancelAptMutation.mutate({ aptId: cancelAptTarget.id, reason: cancelAptReason.trim() });
+                }}
+                disabled={cancelAptMutation.isPending || !cancelAptReason.trim()}
+              >
+                {cancelAptMutation.isPending ? 'Excluindo...' : 'Excluir ticket'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelAllOpen && (
+        <div className="modal-overlay" onClick={() => !cancelAllAppointmentsMutation.isPending && setCancelAllOpen(false)}>
+          <div className="modal-content modal-deactivate" onClick={(e) => e.stopPropagation()}>
+            <h3>Excluir todos os atendimentos</h3>
+            <p className="modal-deactivate-desc">
+              Todos os agendamentos ativos deste cliente serão cancelados. Esta ação não remove o cadastro do cliente nem os pets.
+            </p>
+            <div className="form-group">
+              <label>Justificativa *</label>
+              <textarea
+                value={cancelAllReason}
+                onChange={(e) => setCancelAllReason(e.target.value)}
+                placeholder="Motivo do cancelamento"
+                rows={2}
+                required
+              />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="ui-btn ui-btn-secondary" onClick={() => setCancelAllOpen(false)} disabled={cancelAllAppointmentsMutation.isPending}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger"
+                onClick={() => {
+                  if (!cancelAllReason.trim()) { alert('Informe a justificativa.'); return; }
+                  cancelAllAppointmentsMutation.mutate(cancelAllReason.trim());
+                }}
+                disabled={cancelAllAppointmentsMutation.isPending || !cancelAllReason.trim()}
+              >
+                {cancelAllAppointmentsMutation.isPending ? 'Excluindo...' : 'Excluir todos'}
               </button>
             </div>
           </div>

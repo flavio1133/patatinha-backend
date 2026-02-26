@@ -109,6 +109,52 @@ router.get('/', authenticateToken, (req, res) => {
   res.json({ appointments: enriched });
 });
 
+// Cancelar todos os agendamentos de um cliente (gestão; justificativa obrigatória)
+router.post('/cancel-by-customer', authenticateToken, requireRole(['master', 'manager']), async (req, res) => {
+  const customerId = req.body?.customerId != null ? parseInt(req.body.customerId, 10) : null;
+  const reason = (req.body?.reason && String(req.body.reason).trim()) || '';
+  if (!customerId || !Number.isInteger(customerId)) {
+    return res.status(400).json({ error: 'customerId é obrigatório' });
+  }
+  if (!reason) {
+    return res.status(400).json({ error: 'Justificativa do cancelamento é obrigatória' });
+  }
+
+  let list = appointments.filter(
+    (a) => a.customerId === customerId && a.status !== 'cancelled'
+  );
+  if (req.companyId) {
+    list = list.filter((a) => a.companyId === req.companyId);
+  }
+
+  const now = new Date();
+  for (const apt of list) {
+    const idx = appointments.findIndex((a) => a.id === apt.id);
+    if (idx === -1) continue;
+    appointments[idx].status = 'cancelled';
+    appointments[idx].cancellation_reason = reason;
+    appointments[idx].cancelled_by = 'company';
+    appointments[idx].cancelled_at = now;
+    appointments[idx].cancelledAt = now;
+    appointments[idx].cancellationFee = 0;
+    await Appointment.update(
+      {
+        status: 'cancelled',
+        cancellation_reason: reason,
+        cancelled_by: 'company',
+        cancelled_at: now,
+        cancellationFee: 0,
+      },
+      { where: { id: apt.id } }
+    );
+  }
+
+  res.json({
+    message: 'Agendamentos cancelados com sucesso',
+    cancelledCount: list.length,
+  });
+});
+
 // Verificar disponibilidade
 router.get('/availability', authenticateToken, (req, res) => {
   const { date, service } = req.query;

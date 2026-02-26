@@ -6,7 +6,8 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const { users } = require('./auth.routes');
 const { logAudit } = require('../services/audit.service');
-const { Customer, ClientCompany } = require('../db');
+const { Customer, ClientCompany, Appointment, Sale } = require('../db');
+const { Op } = require('sequelize');
 
 // Cache em memória + controle de IDs para compatibilidade
 const customers = [];
@@ -103,29 +104,81 @@ router.get('/', authenticateToken, async (req, res) => {
     filteredCustomers = filteredCustomers.filter(c => c.phone === phone);
   }
 
-  // Incluir contagem de pets para cada cliente
+  // Incluir contagem de pets e dados de último atendimento / total gasto
+  let lastVisitByCustomer = {};
+  let totalSpentByCustomer = {};
+  try {
+    const aptRows = await Appointment.findAll({
+      where: { status: { [Op.ne]: 'cancelled' } },
+      attributes: ['customerId', 'date'],
+      raw: true,
+    });
+    const saleRows = await Sale.findAll({
+      attributes: ['customerId', 'total'],
+      raw: true,
+    });
+    aptRows.forEach((a) => {
+      if (a.customerId && a.date) {
+        if (!lastVisitByCustomer[a.customerId] || a.date > lastVisitByCustomer[a.customerId]) {
+          lastVisitByCustomer[a.customerId] = a.date;
+        }
+      }
+    });
+    saleRows.forEach((s) => {
+      if (s.customerId != null) {
+        totalSpentByCustomer[s.customerId] = (totalSpentByCustomer[s.customerId] || 0) + (s.total || 0);
+      }
+    });
+  } catch (err) {
+    console.error('Erro ao buscar último atendimento/total gasto:', err.message);
+  }
+
   const customersWithPetsCount = filteredCustomers.map(customer => {
     const petsCount = require('./pets.routes').getPetsByCustomerId(customer.id).length;
-    return { ...customer, petsCount };
+    return {
+      ...customer,
+      petsCount,
+      lastVisit: lastVisitByCustomer[customer.id] || null,
+      totalSpent: totalSpentByCustomer[customer.id] != null ? totalSpentByCustomer[customer.id] : null,
+    };
   });
 
   res.json({ customers: customersWithPetsCount });
 });
 
-// Obter cliente específico com todos os dados
-router.get('/:id', authenticateToken, (req, res) => {
+// Obter cliente específico com todos os dados (inclui lastVisit e totalSpent)
+router.get('/:id', authenticateToken, async (req, res) => {
   const customer = customers.find(c => c.id === parseInt(req.params.id));
-  
   if (!customer) {
     return res.status(404).json({ error: 'Cliente não encontrado' });
   }
 
-  // Buscar pets do cliente
   const pets = require('./pets.routes').getPetsByCustomerId(customer.id);
-  
+  let lastVisit = null;
+  let totalSpent = null;
+  try {
+    const lastApt = await Appointment.findOne({
+      where: { customerId: customer.id, status: { [Op.ne]: 'cancelled' } },
+      attributes: ['date'],
+      order: [['date', 'DESC']],
+      raw: true,
+    });
+    if (lastApt && lastApt.date) lastVisit = lastApt.date;
+    const sales = await Sale.findAll({
+      where: { customerId: customer.id },
+      attributes: ['total'],
+      raw: true,
+    });
+    totalSpent = sales.reduce((acc, s) => acc + (s.total || 0), 0);
+  } catch (err) {
+    console.error('Erro ao buscar lastVisit/totalSpent do cliente:', err.message);
+  }
+
   res.json({
     ...customer,
     pets,
+    lastVisit,
+    totalSpent,
   });
 });
 
